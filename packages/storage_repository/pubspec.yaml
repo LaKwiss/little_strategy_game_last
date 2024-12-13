@@ -1,0 +1,14 @@
+name: storage_repository
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_storage: ^12.3.6
+
+flutter:
+  uses-material-design: true

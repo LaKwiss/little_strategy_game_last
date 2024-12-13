@@ -1,0 +1,42 @@
+Little Strategy
+
+- Ajout de la navigation vers la screen des games au clic du list tile de lobby
+- Ajout de la modification fonctionelle avec les photos de profils
+- Ajout du champs images au Player, celle-ci servent de photo de profil et peuvent être obtenue via les lootbox
+- Ajout de la sauvegarde du Player avec Isar
+- Ajout d'une state preservation avec Isar
+
+- Passage de Auth délié des émulateurs : Done
+- Passage de Storage délié des émulateurs : Done
+- Passage de RTDB à Firestore
+
+- Modification de la snackbar en toast pour les logins / signup
+- Modification de la transition des pages : Ne pas faire de woowsh
+- Modification du Player pour avoir un Uid et une List<Photo>
+
+- Ajout de la classe Photo 
+	id: int
+	ref: firebaseStorage Reference
+
+- Ajout de l'écoute du stream isConnected depuis Firebase Auth
+
+- Ajout de launch config
+
+- Ajout d'un storybook
+
+- Mise en place de Sentry
+
+- Modification Isar
+	Ne plus stocker un player ou autre.
+	Stocker l'état du provider.
+	À chaque début de fonction : stockage de l'état
+	À chaque fin de fonction : stockage de l'état
+
+	Lors d'une fonction de type GET : 
+		Si la réponse est vide : 
+			Vérifier si le state précédent ne contient pas qqch
+	Lors d'un disconnect :
+		Supprimé les states prcédents
+
+- SharedPreferences
+	Lors de la connection : sauvegarder le nom d'utilisateur et le mot de passe

@@ -1,0 +1,22 @@
+name: domain_entities
+publish_to: none
+environment: 
+  sdk: '>=3.5.0 <4.0.0'
+dependencies:
+  equatable: ^2.0.5
+  uuid: ^4.5.1
+  flutter:
+    sdk: flutter
+  build_runner: ^2.4.13
+  json_annotation: ^4.9.0
+  json_serializable: ^6.5.0
+  flame: ^1.22.0
+  analyzer: ^5.13.0
+  collection: ^1.18.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+flutter:
+  assets:
+    - assets/images/
