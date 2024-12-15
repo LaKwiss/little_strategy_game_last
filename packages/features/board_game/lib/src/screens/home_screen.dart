@@ -3,7 +3,6 @@
 import 'dart:developer';
 
 import 'package:board_game/board_game.dart';
-import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,11 +53,7 @@ class HomeScreen extends ConsumerWidget {
           Expanded(
             flex: 1,
             child: ListView(
-              children: [
-                CharacterPresentation(
-                  character: Character.chicken,
-                )
-              ],
+              children: [Text('Some data')],
             ),
           ),
           const Expanded(

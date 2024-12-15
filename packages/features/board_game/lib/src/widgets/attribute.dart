@@ -47,7 +47,7 @@ class AttributePainter extends CustomPainter {
     this.color = Colors.red,
     this.strokeWidth = 4.0,
     this.filledStrokeWidth = 6.0,
-  })  : bgPaint = Paint()..color = Colors.white.withOpacity(0.25),
+  })  : bgPaint = Paint()..color = Colors.white.withAlpha((0.25 * 255).toInt()),
         strokeBgPaint = Paint()..color = color,
         strokeFilledPaint = Paint()
           ..color = Colors.white

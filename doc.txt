@@ -40,3 +40,15 @@ Little Strategy
 
 - SharedPreferences
 	Lors de la connection : sauvegarder le nom d'utilisateur et le mot de passe
+
+ TODO Supprimer les champs "Informatif" de la classe ExplodingAtoms et ajouter une référence à ExplodingAtomsInfos
+  Réfléchir à la jouabilité du jeu
+  Implémenter la logique de jeu via le provider
+  À chaque action, renvoyer la nouvelle instance du jeu, en gardant l'id
+  Les explosions doivent être gérées par le client avant d'envoyer la nouvelle instance du jeu
+  Implémenter les lootboxes
+  Comme dans Clash Royale, les lootboxes sont des coffres qui contiennent des loots divers
+  Les loot box sont des objets que l'on peut acheter ou gagner
+  Les loot box contiennent des objets aléatoires
+  Les objets peuvent être des cartes, des skins, des ressources, des bonus, etc.
+  Les lootboxes ont une rareté qui détermine la qualité des objets qu'elles contiennent

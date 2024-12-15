@@ -105,7 +105,7 @@ class _ProfileState extends ConsumerState<Profile> {
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withAlpha((0.2 * 255).toInt()),
                 blurRadius: 30,
                 spreadRadius: 10,
                 offset: const Offset(0, 10),

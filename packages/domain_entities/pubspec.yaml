@@ -13,6 +13,8 @@ dependencies:
   flame: ^1.22.0
   analyzer: ^5.13.0
   collection: ^1.18.0
+  key_value_storage:
+    path: ../key_value_storage 
 dev_dependencies:
   flutter_test:
     sdk: flutter

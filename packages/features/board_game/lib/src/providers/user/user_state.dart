@@ -8,7 +8,6 @@ class UserState extends Equatable {
   final Player? currentPlayer;
   final List<Player> players;
   final List<String> profilePictures;
-  final User? currentUser;
 
   const UserState({
     required this.status,
@@ -16,7 +15,6 @@ class UserState extends Equatable {
     this.currentPlayer,
     this.players = const [],
     this.profilePictures = const [],
-    this.currentUser,
   });
 
   factory UserState.initial() {
@@ -29,7 +27,6 @@ class UserState extends Equatable {
     Player? currentPlayer,
     List<Player>? players,
     List<String>? profilePictures,
-    User? currentUser,
   }) {
     return UserState(
       status: status ?? this.status,
@@ -37,7 +34,6 @@ class UserState extends Equatable {
       currentPlayer: currentPlayer ?? this.currentPlayer,
       players: players ?? this.players,
       profilePictures: profilePictures ?? this.profilePictures,
-      currentUser: currentUser ?? this.currentUser,
     );
   }
 
@@ -48,16 +44,30 @@ class UserState extends Equatable {
         currentPlayer,
         players,
         profilePictures,
-        currentUser,
       ];
 
   UserStateLM toUserStateLM() {
     return UserStateLM(
       status: status.index,
       errorMessage: errorMessage,
-      currentPlayer: currentPlayer,
-      players: players,
+      currentPlayer: currentPlayer?.toLocalModel() ?? PlayerLM.empty,
+      players: players.map((e) => e.toLocalModel()).toList(),
       profilePictures: profilePictures,
+    );
+  }
+
+  static UserState fromUserStateLM(UserStateLM? userStateLM) {
+    if (userStateLM == null) {
+      return UserState.initial();
+    }
+    return UserState(
+      status: UserStateStatus.values[userStateLM.status],
+      errorMessage: userStateLM.errorMessage,
+      currentPlayer: Player.fromLocalModel(userStateLM.currentPlayer),
+      players: userStateLM.players
+          .map<Player>((e) => Player.fromLocalModel(e))
+          .toList(),
+      profilePictures: userStateLM.profilePictures,
     );
   }
 }

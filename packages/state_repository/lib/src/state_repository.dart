@@ -12,4 +12,10 @@ class StateRepository {
     final box = await _keyValueStorage.stateBox;
     await box.put(stateNode, userState.toUserStateLM());
   }
+
+  Future<UserState?> fetchState() async {
+    final box = await _keyValueStorage.stateBox;
+    final userStateLM = box.get(stateNode);
+    return UserState.fromUserStateLM(userStateLM);
+  }
 }

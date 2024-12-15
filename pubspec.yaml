@@ -37,6 +37,8 @@ dependencies:
     path: packages/state_repository
   key_value_storage:
     path: packages/key_value_storage
+  game_info_repository:
+    path: packages/game_info_repository
   
 
 dev_dependencies:

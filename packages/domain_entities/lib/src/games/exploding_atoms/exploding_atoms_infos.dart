@@ -1,5 +1,6 @@
 import 'package:domain_entities/domain_entities.dart';
 
+/// Represents the informations of the game.
 class ExplodingAtomsInfos {
   final String id;
   final int gridRows;
@@ -23,14 +24,15 @@ class ExplodingAtomsInfos {
     required this.title,
   });
 
-  factory ExplodingAtomsInfos.fromJson(Map<String, dynamic> json) {
+  factory ExplodingAtomsInfos.fromJson(Map<String, dynamic> json,
+      {String? id}) {
     int stateIndex = json['state'] ?? 0;
     if (stateIndex < 0 || stateIndex >= ExplodingAtomsState.values.length) {
       stateIndex = 0;
     }
 
     return ExplodingAtomsInfos(
-      id: json['id'] as String,
+      id: id ?? json['id'] as String,
       gridRows: json['gridRows'] as int,
       gridCols: json['gridCols'] as int,
       currentPlayer: json['currentPlayer'] as int,

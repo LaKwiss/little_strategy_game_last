@@ -93,9 +93,6 @@ class _ExplodingAtomsInfoTileState
         iconData = Icons.check_circle;
         iconColor = Colors.red;
         break;
-      default:
-        iconData = Icons.help_outline;
-        iconColor = Colors.grey;
     }
 
     return Icon(iconData, color: iconColor, size: 28);
@@ -110,8 +107,6 @@ class _ExplodingAtomsInfoTileState
         return 'En cours';
       case ExplodingAtomsState.ended:
         return 'Terminé';
-      default:
-        return 'Inconnu';
     }
   }
 }

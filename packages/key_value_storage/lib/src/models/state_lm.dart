@@ -1,6 +1,6 @@
 // Need to move into key_value_storage package
-import 'package:domain_entities/domain_entities.dart';
 import 'package:hive/hive.dart';
+import 'package:key_value_storage/src/models/models.dart';
 
 part 'state_lm.g.dart';
 
@@ -13,10 +13,10 @@ class UserStateLM {
   final String? errorMessage;
 
   @HiveField(2)
-  final Player? currentPlayer;
+  final PlayerLM? currentPlayer;
 
   @HiveField(3)
-  final List<Player> players;
+  final List<PlayerLM> players;
 
   @HiveField(4)
   final List<String> profilePictures;

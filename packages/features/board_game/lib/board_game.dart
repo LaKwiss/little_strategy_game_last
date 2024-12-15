@@ -1,4 +1,4 @@
-library board_game;
+library;
 
 export 'src/screens/screens.dart';
 export 'src/widgets/widgets.dart';

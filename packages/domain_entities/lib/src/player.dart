@@ -1,39 +1,21 @@
-import 'package:collection/collection.dart'; // Pour comparer les listes
+import 'package:equatable/equatable.dart';
+import 'package:key_value_storage/key_value_storage.dart'; // Pour comparer les listes
 
-class Player {
-  Player({
+class Player extends Equatable {
+  const Player({
     this.username = '',
     this.uid = '',
     this.charactersIds = const [],
     this.profilePictureUrl,
   });
 
-  String username;
-  String uid;
-  List<int> charactersIds;
-  String? profilePictureUrl;
+  final String username;
+  final String uid;
+  final List<int> charactersIds;
+  final String? profilePictureUrl;
 
   // Instance vide
   static final empty = Player();
-
-  // Opérateur d'égalité
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Player &&
-        other.username == username &&
-        other.uid == uid &&
-        const ListEquality<int>().equals(other.charactersIds, charactersIds) &&
-        other.profilePictureUrl == profilePictureUrl;
-  }
-
-  @override
-  int get hashCode {
-    return username.hashCode ^
-        uid.hashCode ^
-        const ListEquality<int>().hash(charactersIds) ^
-        profilePictureUrl.hashCode;
-  }
 
   // Méthode pour créer une copie
   Player copyWith({
@@ -70,6 +52,30 @@ class Player {
               .toList() ??
           [],
       profilePictureUrl: json['profilePictureUrl'] as String?,
+    );
+  }
+
+  @override
+  List<Object?> get props => [username, uid, charactersIds, profilePictureUrl];
+
+  PlayerLM toLocalModel() {
+    return PlayerLM(
+      username: username,
+      uid: uid,
+      charactersIds: charactersIds,
+      profilePictureUrl: profilePictureUrl,
+    );
+  }
+
+  static fromLocalModel(PlayerLM? currentPlayer) {
+    if (currentPlayer == null) {
+      return Player.empty;
+    }
+    return Player(
+      username: currentPlayer.username,
+      uid: currentPlayer.uid,
+      charactersIds: currentPlayer.charactersIds,
+      profilePictureUrl: currentPlayer.profilePictureUrl,
     );
   }
 }

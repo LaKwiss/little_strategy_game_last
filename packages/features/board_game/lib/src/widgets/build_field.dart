@@ -23,7 +23,7 @@ class BuildField extends StatefulWidget {
 }
 
 class _BuildFieldState extends State<BuildField> {
-  Color borderColor = Colors.white.withOpacity(0.5);
+  Color borderColor = Colors.white.withAlpha((0.5 * 255).toInt());
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -31,8 +31,9 @@ class _BuildFieldState extends State<BuildField> {
     super.initState();
     _focusNode.addListener(() {
       setState(() {
-        borderColor =
-            _focusNode.hasFocus ? Colors.white : Colors.white.withOpacity(0.5);
+        borderColor = _focusNode.hasFocus
+            ? Colors.white
+            : Colors.white.withAlpha((0.5 * 255).toInt());
       });
     });
   }
@@ -58,7 +59,7 @@ class _BuildFieldState extends State<BuildField> {
         child: TextFormField(
           focusNode: _focusNode,
           onEditingComplete: () => setState(() {
-            borderColor = Colors.white.withOpacity(0.5);
+            borderColor = Colors.white.withAlpha((0.5 * 255).toInt());
           }),
           controller: widget.controller,
           initialValue: widget.initialValue,

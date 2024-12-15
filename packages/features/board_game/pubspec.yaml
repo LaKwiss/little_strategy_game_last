@@ -2,7 +2,7 @@ name: board_game
 publish_to: none
 
 environment:
-  sdk: ^3.5.2
+  sdk: 3.6.0
 
 dependencies:
   flutter:
@@ -24,6 +24,11 @@ dependencies:
   shared_preferences: ^2.3.3
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.16
+  cloud_firestore: ^5.5.1
+  flame: ^1.22.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  hive_generator: ^2.0.1
 
   # Dépendances locales
   domain_entities:
@@ -38,16 +43,14 @@ dependencies:
     path: ../../state_repository
   key_value_storage:
     path: ../../key_value_storage
-  cloud_firestore: ^5.5.1
-  flame: ^1.22.0
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-  hive_generator: ^2.0.1
+  game_info_repository:
+    path: ../../game_info_repository
+  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: 5.0.0
 
 flutter:
   uses-material-design: true

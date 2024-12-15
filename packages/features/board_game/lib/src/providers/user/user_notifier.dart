@@ -1,7 +1,6 @@
 import 'package:domain_entities/domain_entities.dart';
 import 'package:state_repository/state_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:key_value_storage/key_value_storage.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,45 +16,61 @@ class UserNotifier extends StateNotifier<UserState> {
   UserNotifier(this.repository, this.stateRepository)
       : super(UserState.initial());
 
-  Future<T> safeExecute<T>(Future<T> Function() action) async {
+  /// Generalized method to safely execute actions and update state accordingly.
+  Future<T> _safeExecute<T>(Future<T> Function() action) async {
     try {
-      state = state.copyWith(status: UserStateStatus.loading);
+      _setStateLoading();
       final result = await action();
-      state = state.copyWith(status: UserStateStatus.success);
+      _setStateSuccess();
       await saveState();
       return result;
     } catch (e, stackTrace) {
-      _logger.severe('Error: $e', e, stackTrace);
-      state = state.copyWith(
-        status: UserStateStatus.error,
-        errorMessage: e.toString(),
-      );
+      _handleError(e, stackTrace);
       rethrow;
     }
   }
 
-  Future<void> saveState() async {}
+  /// Updates the state to loading.
+  void _setStateLoading() {
+    state = state.copyWith(status: UserStateStatus.loading);
+  }
 
+  /// Updates the state to success.
+  void _setStateSuccess() {
+    state = state.copyWith(status: UserStateStatus.success);
+  }
+
+  /// Handles errors by logging and updating the state.
+  void _handleError(Object error, StackTrace stackTrace) {
+    _logger.severe('Error: $error', error, stackTrace);
+    state = state.copyWith(
+      status: UserStateStatus.error,
+      errorMessage: error.toString(),
+    );
+  }
+
+  /// Persists the current state to the repository.
+  Future<void> saveState() async {
+    await stateRepository.saveState(state);
+  }
+
+  Future<void> fetchState() async {
+    final state = await stateRepository.fetchState();
+    if (state != null) {
+      this.state = state;
+    }
+  }
+
+  /// Adds a player, validating inputs and ensuring no duplicate usernames.
   Future<Player> addPlayer(
       String email, String username, String credential) async {
-    if (email.isEmpty ||
-        !RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(email)) {
-      throw Exception('Invalid email');
-    }
-    if (username.isEmpty || username.length < 3) {
-      throw Exception('Invalid username');
-    }
-    if (credential.isEmpty) {
-      throw Exception('Credential is required');
-    }
+    _validateEmail(email);
+    username = await _validateAndRetrieveUsername(username, email);
+    _validateCredential(credential);
 
-    Logger('ProfilePicture').severe('Fetching profile pictures');
-
-    return await safeExecute(() async {
+    return await _safeExecute(() async {
       await fetchAndSetPlayers();
-      if (state.players
-          .map((e) => e.username.toLowerCase())
-          .contains(username.toLowerCase())) {
+      if (_isUsernameTaken(username)) {
         throw Exception('Username already exists');
       }
       final result = await repository.addPlayer(email, username, credential);
@@ -64,93 +79,134 @@ class UserNotifier extends StateNotifier<UserState> {
     });
   }
 
+  /// Fetches all profile pictures and updates the state.
   Future<void> fetchAndSetProfilePictures() async {
-    await safeExecute(() async {
-      final List<String> profilePictures =
-          await repository.getAllProfilePictures();
+    await _safeExecute(() async {
+      final profilePictures = await repository.getAllProfilePictures();
       state = state.copyWith(profilePictures: profilePictures);
     });
   }
 
-  Future<String?> addUser(
-      String email, String username, String password) async {
-    if (email.isEmpty || !isEmail(email)) {
-      throw Exception('Invalid email');
-    }
-    if (username.isEmpty || username.length < 3) {
-      throw Exception('Invalid username');
-    }
-    if (password.isEmpty || password.length < 6) {
-      throw Exception('Password must be at least 6 characters');
-    }
+  /// Signs up a user, validating the provided inputs.
+  Future<String?> signUp(String email, String username, String password) async {
+    _validateEmail(email);
+    _validateUsername(username);
+    _validatePassword(password);
 
-    return await safeExecute(() async {
+    return await _safeExecute(() async {
       return await repository.addUser(email, username, password);
     });
   }
 
+  /// Fetches and sets all players, updating the state.
   Future<List<Player>> fetchAndSetPlayers() async {
-    return await safeExecute(() async {
-      final List<Player> users = await repository.getAllUsers();
+    return await _safeExecute(() async {
+      final users = await repository.getAllUsers();
       state = state.copyWith(players: users);
       return users;
     });
   }
 
+  /// Logs in a user, validating the provided credentials.
   Future<String> login(String email, String password) async {
-    if (email.isEmpty || !isEmail(email)) {
-      const errorMsg = 'Adresse email invalide.';
-      _logger
-          .warning('Tentative de connexion avec un email invalide: "$email"');
-      state = state.copyWith(
-        status: UserStateStatus.error,
-        errorMessage: errorMsg,
-      );
-      return Future.error(errorMsg);
-    }
+    _validateEmail(email);
+    _validatePassword(password);
 
-    if (password.isEmpty || password.length < 6) {
-      const errorMsg = 'Le mot de passe doit contenir au moins 6 caractères.';
-      _logger.warning('Tentative de connexion avec un mot de passe invalide.');
-      state = state.copyWith(
-        status: UserStateStatus.error,
-        errorMessage: errorMsg,
-      );
-      return Future.error(errorMsg);
-    }
-
-    _logger.info('Tentative de connexion pour l\'email: $email');
-    return await safeExecute(() async {
+    _logger.info('Attempting login for email: $email');
+    return await _safeExecute(() async {
       final credential = await repository.connectUser(email, password);
-      final currentUser = FirebaseAuth.instance.currentUser;
-      state = state.copyWith(currentUser: currentUser);
-      _logger
-          .info('Connexion réussie pour l\'utilisateur: ${currentUser?.uid}');
+      final username = await findUsernameByEmail(email);
+      state = state.copyWith(
+        currentPlayer: Player(username: username, uid: credential),
+      );
       return credential;
     });
   }
 
+  /// Sets the profile picture for a user.
   Future<void> setProfilePicture(String url) async {
-    if (url.isEmpty || !isValidUrl(url)) {
-      throw Exception('Invalid URL');
-    }
+    _validateUrl(url);
 
-    await safeExecute(() async {
+    await _safeExecute(() async {
       await repository.setProfilePicture(url);
       await fetchAndSetProfilePictures();
     });
   }
 
-  bool isEmail(String email) {
-    if (email.isEmpty ||
-        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(email)) {
-      return false;
-    }
-    return true;
+  /// Finds the username associated with an email.
+  Future<String> findUsernameByEmail(String email) async {
+    _validateEmail(email);
+
+    return await _safeExecute(() async {
+      return await repository.findUsernameByEmail(email);
+    });
   }
 
-  bool isValidUrl(String url) {
-    if (url.isEmpty) return false;
+  /// Adds a reference between an email and username.
+  Future<void> addReferenceEmailUsername(String email, String username) async {
+    await _safeExecute(() async {
+      await repository.addReferenceEmailUsername(email, username);
+    });
+  }
+
+  /// Validates if the given email is in the correct format.
+  void _validateEmail(String email) {
+    if (email.isEmpty ||
+        !RegExp(r'^[\w.-]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(email)) {
+      throw Exception('Invalid email');
+    }
+  }
+
+  /// Validates if the given username meets the requirements or retrieves it from the email.
+  Future<String> _validateAndRetrieveUsername(
+      String username, String email) async {
+    if (username.isNotEmpty && username.length >= 3) return username;
+
+    _logger.warning('Retrieving username for email: $email');
+    final retrievedUsername = await findUsernameByEmail(email);
+    if (retrievedUsername.isEmpty) {
+      throw Exception('No user found');
+    }
+    return retrievedUsername;
+  }
+
+  /// Validates if the given credential is not empty.
+  void _validateCredential(String credential) {
+    if (credential.isEmpty) {
+      throw Exception('Credential is required');
+    }
+  }
+
+  /// Validates if the username meets requirements.
+  void _validateUsername(String username) {
+    if (username.isEmpty || username.length < 3) {
+      throw Exception('Invalid username');
+    }
+  }
+
+  /// Validates if the password meets the minimum length requirement.
+  void _validatePassword(String password) {
+    if (password.isEmpty || password.length < 6) {
+      throw Exception('Password must be at least 6 characters');
+    }
+  }
+
+  /// Validates if the URL is well-formed.
+  void _validateUrl(String url) {
+    if (url.isEmpty || !_isValidUrl(url)) {
+      throw Exception('Invalid URL');
+    }
+  }
+
+  /// Checks if a username is already taken.
+  bool _isUsernameTaken(String username) {
+    return state.players
+        .map((player) => player.username.toLowerCase())
+        .contains(username.toLowerCase());
+  }
+
+  /// Checks if a URL is valid.
+  bool _isValidUrl(String url) {
     final uri = Uri.tryParse(url);
     return uri != null &&
         uri.isAbsolute &&

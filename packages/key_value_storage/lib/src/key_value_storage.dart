@@ -9,6 +9,7 @@ class KeyValueStorage {
       : _hive = hive ?? Hive {
     try {
       _hive.registerAdapter(UserStateLMAdapter());
+      _hive.registerAdapter(PlayerLMAdapter());
     } catch (_) {
       throw Exception(
           'Vous ne pouvez avoir qu\'une seule instance de  [KeyValueStorage]');

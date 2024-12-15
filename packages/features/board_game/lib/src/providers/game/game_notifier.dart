@@ -14,7 +14,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
   ExplodingAtoms findGameById(String id) {
     try {
-      // TODO Implémenter la logique pour trouver le jeu par ID.
       throw UnimplementedError();
     } catch (e, stack) {
       _logger.severe('Error in findGameById: $e', e, stack);
@@ -24,7 +23,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
   Future<ExplodingAtoms> joinGame(String gameId, Player user) async {
     try {
-      // TODO Implémenter la logique pour rejoindre un jeu.
       throw UnimplementedError();
     } catch (e, stack) {
       _logger.severe('Error in joinGame: $e', e, stack);

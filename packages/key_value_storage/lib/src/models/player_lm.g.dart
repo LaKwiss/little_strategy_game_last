@@ -1,44 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'state_lm.dart';
+part of 'player_lm.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class UserStateLMAdapter extends TypeAdapter<UserStateLM> {
+class PlayerLMAdapter extends TypeAdapter<PlayerLM> {
   @override
-  final int typeId = 0;
+  final int typeId = 1;
 
   @override
-  UserStateLM read(BinaryReader reader) {
+  PlayerLM read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return UserStateLM(
-      status: fields[0] as int,
-      errorMessage: fields[1] as String?,
-      currentPlayer: fields[2] as PlayerLM?,
-      players: (fields[3] as List).cast<PlayerLM>(),
-      profilePictures: (fields[4] as List).cast<String>(),
+    return PlayerLM(
+      username: fields[0] as String,
+      uid: fields[1] as String,
+      charactersIds: (fields[2] as List).cast<int>(),
+      profilePictureUrl: fields[3] as String?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, UserStateLM obj) {
+  void write(BinaryWriter writer, PlayerLM obj) {
     writer
-      ..writeByte(5)
-      ..writeByte(0)
-      ..write(obj.status)
-      ..writeByte(1)
-      ..write(obj.errorMessage)
-      ..writeByte(2)
-      ..write(obj.currentPlayer)
-      ..writeByte(3)
-      ..write(obj.players)
       ..writeByte(4)
-      ..write(obj.profilePictures);
+      ..writeByte(0)
+      ..write(obj.username)
+      ..writeByte(1)
+      ..write(obj.uid)
+      ..writeByte(2)
+      ..write(obj.charactersIds)
+      ..writeByte(3)
+      ..write(obj.profilePictureUrl);
   }
 
   @override
@@ -47,7 +44,7 @@ class UserStateLMAdapter extends TypeAdapter<UserStateLM> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserStateLMAdapter &&
+      other is PlayerLMAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

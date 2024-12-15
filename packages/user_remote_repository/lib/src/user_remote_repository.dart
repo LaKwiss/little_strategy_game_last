@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 
 class UserRemoteRepository {
   final String playersNode = 'users';
+  final String referenceEmailUsername = 'reference_email_username';
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _usersStorage;
@@ -156,6 +157,42 @@ class UserRemoteRepository {
       });
     } catch (e, stack) {
       _log.severe('Error getting player by email: $e', e, stack);
+      rethrow;
+    }
+  }
+
+  Future<String> findUsernameByEmail(String email) async {
+    try {
+      final ref =
+          FirebaseFirestore.instance.collection('reference_email_username');
+
+      final querySnapshot = await ref.where('email', isEqualTo: email).get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.id;
+      } else {
+        throw Exception('No user found');
+      }
+    } catch (e) {
+      _log.severe('Error finding username by email: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addReferenceEmailUsername(String email, String username) async {
+    try {
+      _log.info('Adding reference email-username: $email - $username');
+      final docRef =
+          _firestore.collection(referenceEmailUsername).doc(username);
+      final docSnapshot = await docRef.get();
+
+      if (docSnapshot.exists) {
+        await docRef.update({'email': email});
+      } else {
+        await docRef.set({'email': email});
+      }
+    } catch (e, stack) {
+      _log.severe('Error adding reference email-username: $e', e, stack);
       rethrow;
     }
   }
