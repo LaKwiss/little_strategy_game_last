@@ -196,4 +196,13 @@ class UserRemoteRepository {
       rethrow;
     }
   }
+
+  Stream<User?> authStateChanges() {
+    try {
+      return _firebaseAuth.authStateChanges();
+    } catch (e, stack) {
+      _log.severe('Error getting auth state changes: $e', e, stack);
+      rethrow;
+    }
+  }
 }

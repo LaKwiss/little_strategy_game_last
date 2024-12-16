@@ -1,7 +1,7 @@
 import 'dart:math';
 
+import 'package:board_game/board_game.dart';
 import 'package:board_game/src/providers/game/game_infos_stream_provider.dart';
-import 'package:board_game/src/providers/game/game_state_provider.dart';
 import 'package:board_game/src/widgets/exploding_atoms/infos.dart';
 import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +17,16 @@ class LobbyScreen extends ConsumerStatefulWidget {
 class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   @override
   Widget build(BuildContext context) {
+    // Écoute de l'état d'authentification pour rediriger si l'utilisateur est déconnecté
+    ref.listen(authProvider, (previous, next) {
+      if (next.value == null &&
+          ModalRoute.of(context)?.settings.name != '/login') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        });
+      }
+    });
+
     return Scaffold(
       bottomNavigationBar: _buildBottomNavigationBar(context),
       body: _buildBody(context),
@@ -76,7 +86,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   /// Builds the floating action button for creating a new game
   Widget _buildFloatingActionButton() {
-    return IconButton(
+    return FloatingActionButton(
       onPressed: () {
         final newGame = ExplodingAtoms(
           gridRows: 8,
@@ -85,7 +95,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         );
         ref.read(gameStateProvider.notifier).createGame(newGame);
       },
-      icon: const Icon(Icons.add),
+      child: const Icon(Icons.add),
     );
   }
 }

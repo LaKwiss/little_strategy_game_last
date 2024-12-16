@@ -1,3 +1,3 @@
-library state_repository;
+library;
 
 export 'src/state_repository.dart';

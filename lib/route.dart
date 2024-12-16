@@ -1,6 +1,7 @@
 import 'package:board_game/board_game.dart';
 import 'package:flutter/material.dart';
 
+/// Generate routes for the app
 Route<dynamic>? generatedRoute(settings) {
   final Uri uri = Uri.parse(settings.name ?? '/');
 

@@ -1,3 +1,4 @@
+import 'package:board_game/src/widgets/scaffold_messenger/toast.dart';
 import 'package:logging/logging.dart';
 import 'package:board_game/board_game.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +75,7 @@ class _LoginState extends ConsumerState<Login> {
       }
     } catch (e) {
       _logger.severe('Error during form submission: $e');
-      _showSnackbar('Error: ${e.toString()}');
+      _showSnackbar('Error: ${e.toString()}', true);
     }
   }
 
@@ -87,24 +88,24 @@ class _LoginState extends ConsumerState<Login> {
   ) async {
     if (username.isEmpty) {
       _logger.warning('Sign-up failed: username is missing.');
-      _showSnackbar('Username is required');
+      _showSnackbar('Username is required', true);
       return;
     }
     if (password != repeatPassword) {
       _logger.warning('Sign-up failed: passwords do not match.');
-      _showSnackbar('Passwords do not match');
+      _showSnackbar('Passwords do not match', true);
       return;
     }
 
     final credential = await userNotifier.signUp(email, username, password);
     if (credential == null) {
       _logger.warning('Sign-up failed: user already exists.');
-      _showSnackbar('User already exists');
+      _showSnackbar('User already exists', true);
     } else {
       _logger.info('Sign-up successful for $email');
       await userNotifier.addReferenceEmailUsername(email, username);
       await userNotifier.addPlayer(email, username, credential);
-      _showSnackbar('Account created successfully!');
+      _showSnackbar('Account created successfully!', false);
       setState(() => pageType = LoginPageType.login);
     }
   }
@@ -115,17 +116,19 @@ class _LoginState extends ConsumerState<Login> {
     if (credential.isNotEmpty) {
       final username = await userNotifier.findUsernameByEmail(email);
       _logger.info('Login successful for $username');
-      _showSnackbar('Login successful!');
+      _showSnackbar('Login successful!', false);
       Navigator.of(context).pushReplacementNamed('/home');
     }
   }
 
-  void _showSnackbar(String message) {
+  void _showSnackbar(String message, bool isError) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content:
+            Toast(message: message, type: isError ? Type.error : Type.success),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Theme.of(context).colorScheme.error,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
     );
   }
