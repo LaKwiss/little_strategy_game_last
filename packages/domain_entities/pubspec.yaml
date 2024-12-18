@@ -1,7 +1,7 @@
 name: domain_entities
 publish_to: none
 environment: 
-  sdk: '>=3.5.0 <4.0.0'
+  sdk: 3.6.0
 dependencies:
   equatable: ^2.0.5
   uuid: ^4.5.1
@@ -13,8 +13,6 @@ dependencies:
   flame: ^1.22.0
   analyzer: ^5.13.0
   collection: ^1.18.0
-  key_value_storage:
-    path: ../key_value_storage 
 dev_dependencies:
   flutter_test:
     sdk: flutter

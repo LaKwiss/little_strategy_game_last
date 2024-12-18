@@ -45,29 +45,4 @@ class UserState extends Equatable {
         players,
         profilePictures,
       ];
-
-  UserStateLM toUserStateLM() {
-    return UserStateLM(
-      status: status.index,
-      errorMessage: errorMessage,
-      currentPlayer: currentPlayer?.toLocalModel() ?? PlayerLM.empty,
-      players: players.map((e) => e.toLocalModel()).toList(),
-      profilePictures: profilePictures,
-    );
-  }
-
-  static UserState fromUserStateLM(UserStateLM? userStateLM) {
-    if (userStateLM == null) {
-      return UserState.initial();
-    }
-    return UserState(
-      status: UserStateStatus.values[userStateLM.status],
-      errorMessage: userStateLM.errorMessage,
-      currentPlayer: Player.fromLocalModel(userStateLM.currentPlayer),
-      players: userStateLM.players
-          .map<Player>((e) => Player.fromLocalModel(e))
-          .toList(),
-      profilePictures: userStateLM.profilePictures,
-    );
-  }
 }

@@ -65,8 +65,7 @@ class UserRemoteRepository {
         throw Exception('Email is required');
       }
 
-      final player =
-          Player(username: username, uid: uid, charactersIds: const []);
+      final player = Player(username: username, inventory: const []);
       await _firestore
           .collection(playersNode)
           .doc(username)

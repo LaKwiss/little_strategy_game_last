@@ -1,4 +1,4 @@
-export 'src/unit.dart';
+export 'src/loot.dart';
 export 'src/player.dart';
 
 export 'src/games/exploding_atoms/cell.dart';

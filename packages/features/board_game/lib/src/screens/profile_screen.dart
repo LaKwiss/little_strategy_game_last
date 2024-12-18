@@ -26,16 +26,16 @@ class _ProfileState extends ConsumerState<Profile> {
     _populateUserInfo(user);
 
     return Scaffold(
-      bottomNavigationBar: _buildBottomNavigationBar(context),
+      bottomNavigationBar: customBottomNavigationBar(context),
       body: _buildProfilePage(context),
+      floatingActionButton: _floatingActionButton(context),
     );
   }
 
   /// Handles redirection if the user is logged out
   void _handleAuthStateChanges(BuildContext context) {
     ref.listen(authProvider, (previous, next) {
-      if (next.value == null &&
-          ModalRoute.of(context)?.settings.name != '/login') {
+      if (next.value == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.of(context).pushReplacementNamed('/login');
         });
@@ -50,30 +50,6 @@ class _ProfileState extends ConsumerState<Profile> {
       emailController.text = user.email ?? 'No email';
       profilePictureUrl = user.photoURL ?? profilePictureUrl;
     }
-  }
-
-  /// Builds the bottom navigation bar
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    return NavigationBarTheme(
-      data: NavigationBarThemeData(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      ),
-      child: NavigationBar(
-        destinations: [
-          _buildNavIcon(Icons.home, '/home', context),
-          _buildNavIcon(Icons.list, '/lobby', context),
-          _buildNavIcon(Icons.person, '/profile', context),
-        ],
-      ),
-    );
-  }
-
-  /// Creates a reusable navigation icon button
-  Widget _buildNavIcon(IconData icon, String route, BuildContext context) {
-    return IconButton(
-      onPressed: () => Navigator.of(context).pushNamed(route),
-      icon: Icon(icon),
-    );
   }
 
   /// Builds the profile page body
@@ -249,6 +225,15 @@ class _ProfileState extends ConsumerState<Profile> {
           offset: const Offset(0, 10),
         ),
       ],
+    );
+  }
+
+  Widget _floatingActionButton(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () {
+        Navigator.of(context).pushNamed('/open_lootbox');
+      },
+      child: const Icon(Icons.wallet_giftcard_outlined),
     );
   }
 }

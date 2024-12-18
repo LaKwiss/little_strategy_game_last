@@ -1,7 +1,5 @@
 import 'package:domain_entities/domain_entities.dart';
-import 'package:state_repository/state_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:key_value_storage/key_value_storage.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:user_remote_repository/user_remote_repository.dart';
@@ -10,11 +8,9 @@ part 'user_state.dart';
 
 class UserNotifier extends StateNotifier<UserState> {
   final UserRemoteRepository repository;
-  final StateRepository stateRepository;
   final Logger _logger = Logger('UserNotifier');
 
-  UserNotifier(this.repository, this.stateRepository)
-      : super(UserState.initial());
+  UserNotifier(this.repository) : super(UserState.initial());
 
   /// Generalized method to safely execute actions and update state accordingly.
   Future<T> _safeExecute<T>(Future<T> Function() action) async {
@@ -22,7 +18,6 @@ class UserNotifier extends StateNotifier<UserState> {
       _setStateLoading();
       final result = await action();
       _setStateSuccess();
-      await saveState();
       return result;
     } catch (e, stackTrace) {
       _handleError(e, stackTrace);
@@ -47,18 +42,6 @@ class UserNotifier extends StateNotifier<UserState> {
       status: UserStateStatus.error,
       errorMessage: error.toString(),
     );
-  }
-
-  /// Persists the current state to the repository.
-  Future<void> saveState() async {
-    await stateRepository.saveState(state);
-  }
-
-  Future<void> fetchState() async {
-    final state = await stateRepository.fetchState();
-    if (state != null) {
-      this.state = state;
-    }
   }
 
   /// Adds a player, validating inputs and ensuring no duplicate usernames.
@@ -117,7 +100,7 @@ class UserNotifier extends StateNotifier<UserState> {
       final credential = await repository.connectUser(email, password);
       final username = await findUsernameByEmail(email);
       state = state.copyWith(
-        currentPlayer: Player(username: username, uid: credential),
+        currentPlayer: Player(username: username, inventory: []),
       );
       return credential;
     });

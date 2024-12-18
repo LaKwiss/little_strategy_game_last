@@ -26,4 +26,7 @@ Map<String, WidgetBuilder> routes = {
   '/lobby': (context) => const LobbyScreen(),
   '/home': (context) => const HomeScreen(),
   '/profile': (context) => const Profile(),
+  '/create_game': (context) => const CreateGameScreen(),
+  '/open_lootbox': (context) => const OpenLootboxScreen(),
+  '/admin_create_loot': (context) => const CreateLootFormScreen(),
 };

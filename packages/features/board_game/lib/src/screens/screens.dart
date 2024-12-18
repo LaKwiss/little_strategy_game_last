@@ -4,3 +4,6 @@ export 'home_screen.dart';
 export 'profile_screen.dart';
 export 'game_screen.dart';
 export 'not_found_screen.dart';
+export 'create_game_screen.dart';
+export 'open_lootbox_screen.dart';
+export 'create_loot_screen.dart';

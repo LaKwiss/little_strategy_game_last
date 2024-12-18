@@ -1,4 +1,4 @@
-import 'package:board_game/src/widgets/scaffold_messenger/toast.dart';
+import 'package:board_game/src/widgets/toast.dart';
 import 'package:logging/logging.dart';
 import 'package:board_game/board_game.dart';
 import 'package:flutter/material.dart';

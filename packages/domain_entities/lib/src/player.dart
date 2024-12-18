@@ -1,17 +1,15 @@
+import 'package:domain_entities/src/loot.dart';
 import 'package:equatable/equatable.dart';
-import 'package:key_value_storage/key_value_storage.dart'; // Pour comparer les listes
 
 class Player extends Equatable {
   const Player({
     this.username = '',
-    this.uid = '',
-    this.charactersIds = const [],
+    this.inventory = const [],
     this.profilePictureUrl,
   });
 
   final String username;
-  final String uid;
-  final List<int> charactersIds;
+  final List<Loot> inventory;
   final String? profilePictureUrl;
 
   // Instance vide
@@ -20,14 +18,12 @@ class Player extends Equatable {
   // Méthode pour créer une copie
   Player copyWith({
     String? username,
-    String? uid,
-    List<int>? charactersIds,
+    List<Loot>? inventory,
     String? profilePictureUrl,
   }) {
     return Player(
       username: username ?? this.username,
-      uid: uid ?? this.uid,
-      charactersIds: charactersIds ?? List<int>.from(this.charactersIds),
+      inventory: inventory ?? this.inventory,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
     );
   }
@@ -36,8 +32,7 @@ class Player extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'username': username,
-      'uid': uid,
-      'charactersIds': charactersIds,
+      'charactersIds': inventory,
       'profilePictureUrl': profilePictureUrl,
     };
   }
@@ -46,9 +41,8 @@ class Player extends Equatable {
   factory Player.fromJson(Map<String, dynamic> json) {
     return Player(
       username: json['username'] as String? ?? '',
-      uid: json['uid'] as String? ?? '',
-      charactersIds: (json['charactersIds'] as List<dynamic>?)
-              ?.map((e) => e as int)
+      inventory: (json['charactersIds'] as List<dynamic>?)
+              ?.map((e) => Loot.fromJson(e as Map<String, dynamic>, e.keys))
               .toList() ??
           [],
       profilePictureUrl: json['profilePictureUrl'] as String?,
@@ -56,26 +50,5 @@ class Player extends Equatable {
   }
 
   @override
-  List<Object?> get props => [username, uid, charactersIds, profilePictureUrl];
-
-  PlayerLM toLocalModel() {
-    return PlayerLM(
-      username: username,
-      uid: uid,
-      charactersIds: charactersIds,
-      profilePictureUrl: profilePictureUrl,
-    );
-  }
-
-  static fromLocalModel(PlayerLM? currentPlayer) {
-    if (currentPlayer == null) {
-      return Player.empty;
-    }
-    return Player(
-      username: currentPlayer.username,
-      uid: currentPlayer.uid,
-      charactersIds: currentPlayer.charactersIds,
-      profilePictureUrl: currentPlayer.profilePictureUrl,
-    );
-  }
+  List<Object?> get props => [username, inventory, profilePictureUrl];
 }

@@ -39,12 +39,11 @@ dependencies:
     path: ../../game_repository
   storage_repository:
     path: ../../storage_repository
-  state_repository:
-    path: ../../state_repository
-  key_value_storage:
-    path: ../../key_value_storage
   game_info_repository:
     path: ../../game_info_repository
+  lootbox_repository:
+    path: ../../lootbox_repository  
+  confetti: ^0.8.0
   
 
 dev_dependencies:
