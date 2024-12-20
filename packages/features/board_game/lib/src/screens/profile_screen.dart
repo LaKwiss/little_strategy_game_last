@@ -1,7 +1,12 @@
+import 'dart:developer';
+
 import 'package:board_game/board_game.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:board_game/src/providers/lootbox/lootbox_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Profile extends ConsumerStatefulWidget {
   const Profile({super.key});
@@ -13,46 +18,115 @@ class Profile extends ConsumerStatefulWidget {
 class _ProfileState extends ConsumerState<Profile> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  late String profilePictureUrl =
-      'https://picsum.photos/150/150'; // Placeholder
+  String profilePictureUrl = 'https://picsum.photos/150/150'; // Par défaut
+  List<Loot> loots = [];
+  List<String> profilePictures = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialisation décalée après la phase de construction
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeProfilePictures();
+    });
+  }
+
+  /// Initialise les images de profil en ajoutant une image par défaut
+  /// dans la partie loot du `User`, puis en récupérant toutes les images disponibles
+  Future<void> _initializeProfilePictures() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser == null || currentUser.displayName == null) {
+        log('Utilisateur non connecté ou displayName absent');
+        return;
+      }
+
+      // Ajout d'une image par défaut dans le loot de l'utilisateur
+      const testImageUrl = 'https://picsum.photos/200/300'; // Image pour test
+      await ref.read(lootboxProvider.notifier).addLootToUser(
+            Loot(
+              id: 'test_id', // ID arbitraire
+              type: 'profile_picture',
+              name: 'Test Image',
+              reference: testImageUrl,
+              weight: 0.5,
+            ),
+            currentUser.displayName!,
+          );
+
+      // Récupération des loots associés à l'utilisateur
+      loots = await ref
+          .read(lootboxProvider.notifier)
+          .getLootFromUser(currentUser.displayName!);
+
+      // Mise à jour de la liste des références d'images
+      setState(() {
+        profilePictures = loots.map((loot) => loot.reference).toList();
+        if (profilePictures.isNotEmpty) {
+          profilePictureUrl =
+              profilePictures.first; // Met à jour l'image par défaut
+        }
+      });
+    } catch (e) {
+      log('Erreur lors de l\'initialisation des images de profil : $e');
+    }
+  }
+
+  /// Met à jour la photo de profil dans Firebase Auth et Firestore
+  Future<void> _updateProfilePicture(String newImageUrl) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser == null || currentUser.displayName == null) {
+        throw Exception('Utilisateur non connecté ou displayName absent.');
+      }
+
+      // Mise à jour dans Firebase Auth
+      await currentUser.updatePhotoURL(newImageUrl);
+      await currentUser
+          .reload(); // Recharge l'utilisateur pour valider les modifications
+
+      // Mise à jour dans Firestore (dans la collection "users/{username}")
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.displayName!);
+      await userDoc.update({'profilePictureUrl': newImageUrl});
+
+      setState(() {
+        profilePictureUrl = newImageUrl; // Met à jour localement
+      });
+
+      log('Photo de profil mise à jour avec succès.');
+    } catch (e) {
+      log('Erreur lors de la mise à jour de la photo de profil : $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Listen to authentication state
-    _handleAuthStateChanges(context);
-
-    // Fetch user data
     final User? user = ref.watch(authProvider).value;
     _populateUserInfo(user);
 
     return Scaffold(
       bottomNavigationBar: customBottomNavigationBar(context),
       body: _buildProfilePage(context),
-      floatingActionButton: _floatingActionButton(context),
+      floatingActionButton: _floatingActionButton(),
     );
   }
 
-  /// Handles redirection if the user is logged out
-  void _handleAuthStateChanges(BuildContext context) {
-    ref.listen(authProvider, (previous, next) {
-      if (next.value == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacementNamed('/login');
-        });
-      }
-    });
-  }
-
-  /// Populates user information into the text fields
+  /// Met à jour les champs de texte avec les informations utilisateur
   void _populateUserInfo(User? user) {
     if (user != null) {
       usernameController.text = user.displayName ?? 'No username';
       emailController.text = user.email ?? 'No email';
-      profilePictureUrl = user.photoURL ?? profilePictureUrl;
+      if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+        profilePictureUrl = user.photoURL!;
+      }
     }
   }
 
-  /// Builds the profile page body
+  /// Construit la page de profil
   Widget _buildProfilePage(BuildContext context) {
     return Center(
       child: Container(
@@ -74,11 +148,8 @@ class _ProfileState extends ConsumerState<Profile> {
     );
   }
 
-  /// Builds the profile picture widget with change option
+  /// Construit l'image de profil avec le bouton pour modifier
   Widget _buildProfilePicture() {
-    final List<String> profilePictures =
-        ref.watch(userProvider).profilePictures;
-
     return Center(
       child: Stack(
         children: [
@@ -89,30 +160,30 @@ class _ProfileState extends ConsumerState<Profile> {
           Positioned(
             bottom: 0,
             right: 0,
-            child: _buildEditProfilePictureButton(profilePictures),
+            child: _buildEditProfilePictureButton(),
           ),
         ],
       ),
     );
   }
 
-  /// Builds the edit profile picture button
-  Widget _buildEditProfilePictureButton(List<String> profilePictures) {
+  /// Construit le bouton pour modifier l'image de profil
+  Widget _buildEditProfilePictureButton() {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+      decoration: const BoxDecoration(
+        color: Colors.blue,
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        color: Colors.white,
-        icon: const Icon(Icons.camera_alt),
-        onPressed: () => _showImageSelectionDialog(profilePictures),
+        icon: const Icon(Icons.camera_alt, color: Colors.white),
+        onPressed: () {
+          _showImageSelectionDialog(profilePictures);
+        },
       ),
     );
   }
 
-  /// Shows the dialog for selecting a profile picture
+  /// Affiche une boîte de dialogue pour sélectionner une image de profil
   void _showImageSelectionDialog(List<String> profilePictures) {
     showDialog(
       context: context,
@@ -123,21 +194,19 @@ class _ProfileState extends ConsumerState<Profile> {
           ),
           child: Container(
             padding: const EdgeInsets.all(16.0),
-            width: double.maxFinite,
             height: 400,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   'Select a Profile Picture',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
                   textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 12),
-                Expanded(child: _buildProfilePictureGrid(profilePictures)),
+                Expanded(
+                  child: _buildProfilePictureGrid(profilePictures),
+                ),
               ],
             ),
           ),
@@ -146,7 +215,7 @@ class _ProfileState extends ConsumerState<Profile> {
     );
   }
 
-  /// Builds the grid for profile picture selection
+  /// Construit la grille d'images pour la sélection
   Widget _buildProfilePictureGrid(List<String> profilePictures) {
     return GridView.builder(
       itemCount: profilePictures.length,
@@ -157,49 +226,21 @@ class _ProfileState extends ConsumerState<Profile> {
       ),
       itemBuilder: (context, index) {
         final imageUrl = profilePictures[index];
-        return _buildProfilePictureOption(imageUrl);
+        return InkWell(
+          onTap: () async {
+            await _updateProfilePicture(imageUrl); // Met à jour la photo
+            Navigator.of(context).pop(); // Ferme la boîte de dialogue
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(imageUrl, fit: BoxFit.cover),
+          ),
+        );
       },
     );
   }
 
-  /// Builds a selectable profile picture option
-  Widget _buildProfilePictureOption(String imageUrl) {
-    return InkWell(
-      onTap: () {
-        // Implement profile picture change logic
-        Navigator.of(context).pop();
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Stack(
-          children: [
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: const Text(
-                  'Select',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Builds a disabled text field
+  /// Construit un champ texte désactivé
   Widget _buildTextField(String label, TextEditingController controller) {
     return TextFormField(
       controller: controller,
@@ -212,7 +253,7 @@ class _ProfileState extends ConsumerState<Profile> {
     );
   }
 
-  /// Builds the card-like decoration for the profile page container
+  /// Construit le style de la carte du profil
   BoxDecoration _buildCardDecoration(BuildContext context) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(16),
@@ -228,7 +269,8 @@ class _ProfileState extends ConsumerState<Profile> {
     );
   }
 
-  Widget _floatingActionButton(BuildContext context) {
+  /// Construit le bouton d'action flottant
+  Widget _floatingActionButton() {
     return FloatingActionButton(
       onPressed: () {
         Navigator.of(context).pushNamed('/open_lootbox');

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:little_strategy/firebase_options.dart';
 import 'package:little_strategy/route.dart';
 import 'package:little_strategy/theme.dart';
@@ -12,7 +11,6 @@ void main() {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
@@ -20,13 +18,6 @@ void main() {
       } catch (e) {
         Logger('main').severe('Erreur d\'initialisation Firebase : $e');
       }
-
-      try {
-        await Hive.initFlutter();
-      } catch (e) {
-        Logger('main').severe('Erreur d\'initialisation Hive : $e');
-      }
-
       runApp(
         const ProviderScope(
           child: MainApp(),

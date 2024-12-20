@@ -1,4 +1,3 @@
-import 'package:domain_entities/src/loot.dart';
 import 'package:equatable/equatable.dart';
 
 class Player extends Equatable {
@@ -9,7 +8,7 @@ class Player extends Equatable {
   });
 
   final String username;
-  final List<Loot> inventory;
+  final List<String> inventory;
   final String? profilePictureUrl;
 
   // Instance vide
@@ -18,7 +17,7 @@ class Player extends Equatable {
   // Méthode pour créer une copie
   Player copyWith({
     String? username,
-    List<Loot>? inventory,
+    List<String>? inventory,
     String? profilePictureUrl,
   }) {
     return Player(
@@ -41,10 +40,9 @@ class Player extends Equatable {
   factory Player.fromJson(Map<String, dynamic> json) {
     return Player(
       username: json['username'] as String? ?? '',
-      inventory: (json['charactersIds'] as List<dynamic>?)
-              ?.map((e) => Loot.fromJson(e as Map<String, dynamic>, e.keys))
-              .toList() ??
-          [],
+      inventory: json['inventory'] != null
+          ? List<String>.from(json['inventory'] as List)
+          : [],
       profilePictureUrl: json['profilePictureUrl'] as String?,
     );
   }
