@@ -279,3 +279,5 @@ class _ProfileState extends ConsumerState<Profile> {
     );
   }
 }
+
+// Problème : La page de profil ne se met pas à jour après la modification de l'image de profil.
