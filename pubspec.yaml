@@ -34,6 +34,11 @@ dependencies:
   lootbox_repository:
     path: packages/lootbox_repository
   confetti: ^0.8.0
+  shared_preferences: ^2.3.4
+  audioplayers: ^6.1.0
+  lottie: ^3.3.0
+  animated_text_kit: ^4.2.2
+  shimmer: ^3.0.0
   
 
 dev_dependencies:
