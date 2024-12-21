@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
-
   @override
   State<Profile> createState() => _ProfileState();
 }
@@ -13,6 +12,7 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   bool isLoading = false;
   List<String> availablePictures = [];
+  List<String> availableBanners = [];
   User? _user;
 
   @override
@@ -20,15 +20,14 @@ class _ProfileState extends State<Profile> {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
     _initializeProfilePictures();
+    _initializeBanners();
   }
 
   Future<void> _initializeProfilePictures() async {
     if (_user?.displayName == null) return;
-
     if (mounted) setState(() => isLoading = true);
 
     try {
-      // Ajout d'une image par défaut si absente
       final defaultPicture = 'https://picsum.photos/150/150';
       final defaultLoot = {
         'type': 'profile_picture',
@@ -41,10 +40,8 @@ class _ProfileState extends State<Profile> {
 
       final lootRef =
           userDoc.collection('loots').doc('default_profile_picture');
-
       await lootRef.set(defaultLoot, SetOptions(merge: true));
 
-      // Récupération des loots
       final loots = await userDoc
           .collection('loots')
           .where('type', isEqualTo: 'profile_picture')
@@ -64,10 +61,29 @@ class _ProfileState extends State<Profile> {
     }
   }
 
-  Future<void> _updateProfilePicture(String newImageUrl) async {
-    // Si l'utilisateur ou son displayName est null, on arrête.
+  Future<void> _initializeBanners() async {
     if (_user?.displayName == null) return;
+    try {
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_user!.displayName);
 
+      final banners = await userDoc.collection('banners').get();
+
+      if (mounted) {
+        setState(() {
+          availableBanners = banners.docs
+              .map((doc) => doc.data()['reference'] as String)
+              .toList();
+        });
+      }
+    } catch (e) {
+      log('Error loading banners: $e');
+    }
+  }
+
+  Future<void> _updateProfilePicture(String newImageUrl) async {
+    if (_user?.displayName == null) return;
     if (mounted) setState(() => isLoading = true);
 
     try {
@@ -76,7 +92,6 @@ class _ProfileState extends State<Profile> {
           .collection('users')
           .doc(_user!.displayName);
 
-      // On met à jour le document utilisateur dans Firestore
       batch.update(userDoc, {
         'profilePictureUrl': newImageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -100,6 +115,7 @@ class _ProfileState extends State<Profile> {
       user: _user,
       isLoading: isLoading,
       availablePictures: availablePictures,
+      availableBanners: availableBanners,
       onUpdatePicture: _updateProfilePicture,
     );
   }
@@ -109,19 +125,22 @@ class _ProfileContent extends StatelessWidget {
   final User? user;
   final bool isLoading;
   final List<String> availablePictures;
+  final List<String> availableBanners;
   final Function(String) onUpdatePicture;
 
   const _ProfileContent({
     required this.user,
     required this.isLoading,
     required this.availablePictures,
+    required this.availableBanners,
     required this.onUpdatePicture,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      floatingActionButton: _editProfile(context),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -131,16 +150,17 @@ class _ProfileContent extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).pushNamed('/open_lootbox'),
-        child: const Icon(Icons.wallet_giftcard_outlined),
-      ),
     );
   }
 
-  /// --------------------------------------------------------------------------
-  ///  HEADER
-  /// --------------------------------------------------------------------------
+  Widget _editProfile(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () => showDialog(
+          context: context, builder: (context) => throw UnimplementedError()),
+      child: const Icon(Icons.edit),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
@@ -165,127 +185,146 @@ class _ProfileContent extends StatelessWidget {
     );
   }
 
+  Widget _buildEditBannerButton(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.mode_edit_outline),
+      onPressed: () => _showBannerSelectionDialog(context),
+    );
+  }
+
   Widget _buildProfilePicture(BuildContext context) {
     return Center(
-      child: Stack(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(user?.photoURL ??
-                'https://commons.wikimedia.org/wiki/File:No_Image_Available.jpg'),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(user?.photoURL ??
+                  'https://commons.wikimedia.org/wiki/File:No_Image_Available.jpg'),
+            ),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: _buildEditProfilePictureButton(context),
-          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  /// Construit le bouton pour modifier l'image de profil
-  Widget _buildEditProfilePictureButton(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.blue,
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: const Icon(Icons.camera_alt, color: Colors.white),
-        onPressed: () {
-          _showImageSelectionDialog(context);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEditButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showImageSelectionDialog(context),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.blue,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 3,
-              // offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+  void _showBannerSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 600,
+          height: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Banner',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Expanded(
+                child:
+                    Center(child: Text('Banner selection to be implemented')),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showImageSelectionDialog(BuildContext context) {
-    log('clicked');
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            height: 400,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Select a Profile Picture',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: GridView.builder(
-                    itemCount: availablePictures.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
-                    itemBuilder: (context, index) {
-                      final imageUrl = availablePictures[index];
-                      return InkWell(
-                        onTap: () {
-                          onUpdatePicture(imageUrl);
-                          Navigator.of(context).pop();
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(child: Icon(Icons.error));
-                            },
-                          ),
-                        ),
-                      );
-                    },
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 600,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Profile Picture',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 400,
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: availablePictures.length,
+                  itemBuilder: (context, index) {
+                    final imageUrl = availablePictures[index];
+                    final isSelected = user?.photoURL == imageUrl;
+
+                    return GestureDetector(
+                      onTap: () {
+                        onUpdatePicture(imageUrl);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: isSelected
+                              ? Border.all(color: Colors.blue, width: 3)
+                              : null,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(imageUrl, fit: BoxFit.cover),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  /// --------------------------------------------------------------------------
-  ///  PROFILE INFOS
-  /// --------------------------------------------------------------------------
   Widget _buildProfileInfo() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -299,7 +338,6 @@ class _ProfileContent extends StatelessWidget {
     );
   }
 
-  /// Ici, on force explicitement la width à 400 pour chaque champ.
   Widget _buildTextField(String label, String value) {
     return SizedBox(
       width: 400,
