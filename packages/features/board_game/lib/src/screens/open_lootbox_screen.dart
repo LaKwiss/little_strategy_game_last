@@ -1,424 +1,288 @@
-import 'dart:async';
 import 'dart:math' as math;
-import 'package:board_game/src/providers/lootbox/lootbox_provider.dart';
-import 'package:confetti/confetti.dart';
-import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:logging/logging.dart';
 
-// PACKAGES EXTERNES
-import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:shimmer/shimmer.dart';
-
+/// Screen that displays a lootbox opening animation with a magical fantasy theme
+/// Uses kebab-style rotation (exponential ease-out) and sparkle effects
 class OpenLootboxScreen extends ConsumerStatefulWidget {
   const OpenLootboxScreen({super.key});
 
   @override
-  _OpenLootboxState createState() => _OpenLootboxState();
+  ConsumerState<OpenLootboxScreen> createState() => _OpenLootboxScreenState();
 }
 
-class _OpenLootboxState extends ConsumerState<OpenLootboxScreen>
-    with SingleTickerProviderStateMixin {
-  Loot? _loot;
-  bool _isOpening = false;
-  late ConfettiController _confettiController;
-  late AnimationController _animationController;
+class _OpenLootboxScreenState extends ConsumerState<OpenLootboxScreen>
+    with TickerProviderStateMixin {
+  static const String _lootboxImage =
+      'https://cdn.discordapp.com/attachments/1194348634708377631/1320484247840096328/u3919386633_A_vibrant_cartoon-style_treasure_chest_with_shimm_9978d7e1-9e93-4e69-8c5c-d734ddda781c_2.png?ex=6769c44a&is=676872ca&hm=02e061354c063f46a2fe3de195327344817d169d122a02ded7622d350a35d352&';
 
-  // Animations pour la box
-  late Animation<double> _verticalOffsetAnimation;
-  late Animation<double> _rotateYAnimation;
-  late Animation<double> _rotateZAnimation;
-  late Animation<double> _scaleAnimation;
+  late AnimationController _chestController;
+  late AnimationController _buttonController;
+  late AnimationController _sparkleController;
+  late Animation<Offset> _slideAnimation;
 
-  // Animations de background
-  late Animation<Color?> _backgroundColorAnimation;
+  bool _isOpened = false;
+  bool _showCollectButton = false;
 
-  final Logger _logger = Logger('OpenLootboxScreen');
+  /// Kebab rotation parameters
+  final double _angleFinal = 12 * math.pi; // 6 full rotations
+  final double _k = 3.0; // exponential coefficient
+
+  /// θ(t) = AngleFinal * (1 - e^(-k·t)) / (1 - e^(-k))
+  double _kebabAngle(double t) =>
+      _angleFinal * (1 - math.exp(-_k * t)) / (1 - math.exp(-_k));
 
   @override
   void initState() {
     super.initState();
 
-    // Confetti
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 4));
-
-    // Animation Controller principal
-    _animationController = AnimationController(
+    _chestController = AnimationController(
+      duration: const Duration(milliseconds: 3500),
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _chestController,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _buttonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+      lowerBound: 0.0,
+      upperBound: 1.0,
     )..repeat(reverse: true);
 
-    // Animations de la box
-    _verticalOffsetAnimation = Tween<double>(begin: 0, end: 10).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _rotateYAnimation = Tween<double>(begin: -0.03, end: 0.03).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _rotateZAnimation = Tween<double>(begin: -0.02, end: 0.02).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    // Animation de background (couleurs)
-    _backgroundColorAnimation = ColorTween(
-      begin: Colors.deepPurple.shade900,
-      end: Colors.indigo.shade900,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3500),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _confettiController.dispose();
-    _animationController.dispose();
+    _chestController.dispose();
+    _buttonController.dispose();
+    _sparkleController.dispose();
     super.dispose();
   }
 
-  Future<void> _onPressButton() async {
-    if (_isOpening) return; // Évite les double-clics
+  /// Triggers the chest opening animation sequence
+  void _startOpening() {
+    if (_isOpened) return;
 
-    setState(() {
-      _isOpening = true;
-      // Effet d'expansion lors de l'ouverture
-      _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-      );
+    setState(() => _isOpened = true);
+
+    _chestController.forward(from: 0.0).then((_) {
+      setState(() => _showCollectButton = true);
     });
-
-    _logger.info('Ouverture de la lootbox...');
-    await Future.delayed(const Duration(seconds: 3));
-
-    try {
-      // Récupération du loot
-      final loot = await ref.read(lootboxProvider.notifier).getRandomLoot();
-
-      // Ajout du loot à l’utilisateur
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null || currentUser.displayName == null) {
-        throw Exception('Utilisateur non connecté ou displayName absent.');
-      }
-
-      await ref
-          .read(lootboxProvider.notifier)
-          .addLootToUser(loot, currentUser.displayName!);
-
-      // Réinitialisation après obtention
-      setState(() {
-        _loot = loot;
-        _isOpening = false;
-        _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
-          CurvedAnimation(
-              parent: _animationController, curve: Curves.easeInOut),
-        );
-      });
-
-      // Lancement des confettis
-      _confettiController.play();
-      _logger.info('Loot obtenu : ${_loot!.name}');
-      _showWinDialog();
-    } catch (error) {
-      setState(() {
-        _isOpening = false;
-        _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
-          CurvedAnimation(
-              parent: _animationController, curve: Curves.easeInOut),
-        );
-      });
-      _logger.severe('Erreur lors de l\'ouverture de la lootbox', error);
-      _showErrorDialog();
-    }
+    _buttonController.stop();
   }
 
-  void _showWinDialog() {
-    if (_loot == null) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-              CurvedAnimation(
-                  parent: _animationController, curve: Curves.elasticOut),
+  void _collectAndClose() => Navigator.pop(context);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black87,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.network(
+              _lootboxImage,
+              fit: BoxFit.cover,
             ),
-            child: AlertDialog(
-              backgroundColor: Colors.black87,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Center(
-                child: DefaultTextStyle(
-                  style: const TextStyle(
-                    fontSize: 28.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber,
-                  ),
-                  child: AnimatedTextKit(
-                    totalRepeatCount: 1,
-                    animatedTexts: [
-                      ScaleAnimatedText(
-                        'VICTOIRE !',
-                        scalingFactor: 0.8,
-                        duration: const Duration(milliseconds: 1200),
-                      )
-                    ],
-                    isRepeatingAnimation: false,
-                  ),
+          ),
+          if (!_isOpened)
+            Center(
+              child: AnimatedBuilder(
+                animation: _buttonController,
+                builder: (context, child) {
+                  final double scale = 1.0 + 0.1 * _buttonController.value;
+                  return Transform.scale(
+                    scale: scale,
+                    child: child,
+                  );
+                },
+                child: GlowingFantasyButton(
+                  text: 'Ouvrir le Coffre',
+                  onTap: _startOpening,
                 ),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 20),
-                  Text(
-                    'Vous avez obtenu : ${_loot!.name}',
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  // Petite animation visuelle simple (sans assets externes)
-                  // On va simuler une sorte d’aura tournante avec un simple Container qui tourne
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return Transform.rotate(
-                          angle: _animationController.value * 2 * math.pi,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: const SweepGradient(
-                                colors: [
-                                  Colors.amber,
-                                  Colors.transparent,
-                                  Colors.amber,
-                                  Colors.transparent
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.star,
-                                color: Colors.amber.shade400,
-                                size: 30,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+            ),
+          SlideTransition(
+            position: _slideAnimation,
+            child: AnimatedBuilder(
+              animation: _chestController,
+              builder: (context, child) {
+                final double angle = _kebabAngle(_chestController.value);
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(angle),
+                  child: child,
+                );
+              },
+              child: Center(
+                child: SparklingFantasyContainer(animation: _sparkleController),
               ),
-              actions: [
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'Fermer',
-                      style: TextStyle(color: Colors.amber),
-                    ),
-                  ),
+            ),
+          ),
+          if (_showCollectButton)
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GlowingFantasyButton(
+                  text: 'Récupérer le lot',
+                  onTap: _collectAndClose,
                 ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A fantasy-themed button with gradient background and glow effect
+class GlowingFantasyButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final String text;
+
+  const GlowingFantasyButton({
+    super.key,
+    required this.onTap,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFF743DA),
+              Color(0xFF8E2DE2),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: Colors.amberAccent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFFF66FF).withAlpha(179),
+              blurRadius: 25,
+              spreadRadius: 2,
+            )
+          ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.amberAccent,
+                blurRadius: 5,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A decorative container with a moving shimmer effect
+class SparklingFantasyContainer extends StatelessWidget {
+  final AnimationController animation;
+
+  const SparklingFantasyContainer({
+    super.key,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final double t = animation.value;
+        final double shimmerOffset = -4.0 + 13.0 * t;
+
+        return Container(
+          width: 300,
+          height: 400,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFF743DA),
+                Color(0xFF8E2DE2),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: Colors.amberAccent,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFFFF66FF).withAlpha(179),
+                blurRadius: 25,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: ShaderMask(
+            shaderCallback: (rect) {
+              return LinearGradient(
+                begin: Alignment(shimmerOffset - 0.2, 0.1),
+                end: Alignment(shimmerOffset + 0.2, -0.1),
+                colors: [
+                  Colors.white.withAlpha(0),
+                  Colors.white.withAlpha(102),
+                  Colors.white.withAlpha(0),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ).createShader(rect);
+            },
+            blendMode: BlendMode.screen,
+            child: const Center(
+              child: Text(
+                'Contenu Magique',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.amberAccent,
+                      blurRadius: 5,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );
       },
-    );
-  }
-
-  void _showErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Erreur'),
-          content: const Text(
-              'Impossible d\'ouvrir la lootbox. Veuillez réessayer.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fermer', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Arrière-plan : gradient radial animé + scintillement
-    return Scaffold(
-      body: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, _) {
-          final backgroundColor =
-              _backgroundColorAnimation.value ?? Colors.deepPurple.shade900;
-
-          final gradient = RadialGradient(
-            center: const Alignment(0, 0),
-            radius: 1.0,
-            colors: [
-              backgroundColor.withOpacity(0.9),
-              Colors.black.withOpacity(0.95),
-            ],
-            stops: const [0.3, 1.0],
-          );
-
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(gradient: gradient),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Confetti
-                ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  shouldLoop: false,
-                  colors: const [
-                    Colors.red,
-                    Colors.blue,
-                    Colors.green,
-                    Colors.yellow,
-                    Colors.purple,
-                    Colors.orange
-                  ],
-                ),
-
-                // Aura lumineuse dynamique
-                Transform.scale(
-                  scale: 2.5 +
-                      math.sin(_animationController.value * math.pi) * 0.5,
-                  child: Container(
-                    width: 150,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          Colors.blueAccent.withOpacity(
-                              0.6 + _animationController.value * 0.4),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.4, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Titre animé au dessus
-                Positioned(
-                  top: 100,
-                  child: DefaultTextStyle(
-                    style: const TextStyle(
-                      fontFamily: 'Roboto',
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    child: AnimatedTextKit(
-                      repeatForever: true,
-                      pause: const Duration(milliseconds: 1000),
-                      animatedTexts: [
-                        RotateAnimatedText("Ouvrez"),
-                        RotateAnimatedText("Cette"),
-                        RotateAnimatedText("LOOTBOX !"),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // La lootbox
-                Tooltip(
-                  message: 'Cliquez pour ouvrir la lootbox !',
-                  child: GestureDetector(
-                    onTap: _onPressButton,
-                    child: Transform(
-                      alignment: FractionalOffset.center,
-                      transform: Matrix4.identity()
-                        ..translate(0.0, _verticalOffsetAnimation.value)
-                        ..rotateY(_rotateYAnimation.value)
-                        ..rotateZ(_rotateZAnimation.value)
-                        ..scale(_scaleAnimation.value),
-                      child: Shimmer.fromColors(
-                        baseColor: _isOpening
-                            ? Colors.blueAccent
-                            : Colors.blue.shade700,
-                        highlightColor: Colors.cyanAccent,
-                        period: const Duration(seconds: 2),
-                        child: Container(
-                          width: 250,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _isOpening
-                                    ? Colors.blueAccent.withOpacity(0.7)
-                                    : Colors.blue.shade900.withOpacity(0.5),
-                                blurRadius: 30,
-                                spreadRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Fond de la box
-                              Container(
-                                width: double.infinity,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade700.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
-                              ),
-                              if (_isOpening)
-                                // Un indicatif de chargement
-                                Transform.scale(
-                                  scale: 1.5,
-                                  child: const CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 6,
-                                  ),
-                                )
-                              else
-                                Transform.rotate(
-                                  angle: math.sin(_animationController.value *
-                                          math.pi) *
-                                      0.1,
-                                  child: const Icon(
-                                    Icons.casino_outlined,
-                                    size: 200,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 }

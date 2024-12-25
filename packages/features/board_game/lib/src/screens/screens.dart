@@ -1,5 +1,6 @@
 export 'lobby_screen.dart';
 export 'login_screen.dart';
+export 'game_mode_selection_screen.dart';
 export 'home_screen.dart';
 export 'profile_screen.dart';
 export 'game_screen.dart';
@@ -7,3 +8,4 @@ export 'not_found_screen.dart';
 export 'create_game_screen.dart';
 export 'open_lootbox_screen.dart';
 export 'create_loot_screen.dart';
+export 'game_list_screen.dart';

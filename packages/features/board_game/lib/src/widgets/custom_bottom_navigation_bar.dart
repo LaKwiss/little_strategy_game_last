@@ -1,31 +1,38 @@
 import 'package:flutter/material.dart';
 
-Widget customBottomNavigationBar(BuildContext context) {
-  return NavigationBarTheme(
-    data: NavigationBarThemeData(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    ),
-    child: NavigationBar(
-      destinations: [
-        IconButton(
-          onPressed: () {
-            Navigator.of(context).pushNamed('/home');
-          },
-          icon: const Icon(Icons.home),
-        ),
-        IconButton(
-          onPressed: () {
-            Navigator.of(context).pushNamed('/lobby');
-          },
-          icon: const Icon(Icons.list),
-        ),
-        IconButton(
-          onPressed: () {
-            Navigator.of(context).pushNamed('/profile');
-          },
-          icon: const Icon(Icons.person),
-        ),
-      ],
-    ),
-  );
+class CustomBottomNavigationBar extends StatelessWidget {
+  const CustomBottomNavigationBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final destinations = [
+      (icon: Icons.home, route: '/home'),
+      (icon: Icons.list, route: '/lobby'),
+      (icon: Icons.person, route: '/profile'),
+    ];
+
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          height: 68,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+          indicatorColor: Colors.transparent),
+      child: NavigationBar(
+        selectedIndex: _getCurrentIndex(context),
+        onDestinationSelected: (index) =>
+            Navigator.pushNamed(context, destinations[index].route),
+        destinations: destinations
+            .map((d) => NavigationDestination(
+                  icon: Icon(d.icon),
+                  label: '',
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  int _getCurrentIndex(BuildContext context) {
+    final route = ModalRoute.of(context)?.settings.name ?? '';
+    return ['/home', '/lobby', '/profile'].indexOf(route);
+  }
 }

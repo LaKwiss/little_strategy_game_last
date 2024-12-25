@@ -1,48 +1,17 @@
-part of 'user_notifier.dart';
+import 'package:domain_entities/domain_entities.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-enum UserStateStatus { initial, loading, success, error }
+part 'user_state.freezed.dart';
 
-class UserState extends Equatable {
-  final UserStateStatus status;
-  final String? errorMessage;
-  final Player? currentPlayer;
-  final List<Player> players;
-  final List<String> profilePictures;
-
-  const UserState({
-    required this.status,
-    this.errorMessage,
-    this.currentPlayer,
-    this.players = const [],
-    this.profilePictures = const [],
-  });
-
-  factory UserState.initial() {
-    return const UserState(status: UserStateStatus.initial);
-  }
-
-  UserState copyWith({
-    UserStateStatus? status,
-    String? errorMessage,
+@freezed
+class UserState with _$UserState {
+  const factory UserState({
+    @Default(false) bool isLoading,
+    @Default('') String error,
+    User? user,
+    @Default(<String>[]) List<String> profilePictures,
+    @Default(<Player>[]) List<Player> players,
     Player? currentPlayer,
-    List<Player>? players,
-    List<String>? profilePictures,
-  }) {
-    return UserState(
-      status: status ?? this.status,
-      errorMessage: errorMessage,
-      currentPlayer: currentPlayer ?? this.currentPlayer,
-      players: players ?? this.players,
-      profilePictures: profilePictures ?? this.profilePictures,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        status,
-        errorMessage,
-        currentPlayer,
-        players,
-        profilePictures,
-      ];
+  }) = _UserState;
 }

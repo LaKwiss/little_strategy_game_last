@@ -1,6 +1,6 @@
-import 'package:board_game/src/widgets/toast.dart';
-import 'package:logging/logging.dart';
 import 'package:board_game/board_game.dart';
+import 'package:board_game/src/providers/user/user_state.dart';
+import 'package:logging/logging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,15 +16,14 @@ class Login extends ConsumerStatefulWidget {
 
 class _LoginState extends ConsumerState<Login> {
   final _formKey = GlobalKey<FormState>();
+  final _logger = Logger('LoginScreen');
 
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController repeatPasswordController =
-      TextEditingController();
+  final emailController = TextEditingController();
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final repeatPasswordController = TextEditingController();
 
-  LoginPageType pageType = LoginPageType.login;
-  final Logger _logger = Logger('LoginScreen');
+  var pageType = LoginPageType.login;
 
   @override
   void dispose() {
@@ -42,90 +41,84 @@ class _LoginState extends ConsumerState<Login> {
     repeatPasswordController.clear();
   }
 
-  void _alternatePageType() {
+  void _togglePageType() {
     _clearFields();
     setState(() {
       pageType = pageType == LoginPageType.login
           ? LoginPageType.signUp
           : LoginPageType.login;
-      _logger.info(pageType == LoginPageType.login
-          ? 'Switched to login screen.'
-          : 'Switched to sign-up screen.');
     });
   }
 
   Future<void> _onSubmit() async {
-    if (!_formKey.currentState!.validate()) {
-      _logger.warning('Invalid form submission');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final email = emailController.text.trim();
     final username = usernameController.text.trim();
     final password = passwordController.text;
-    final repeatPassword = repeatPasswordController.text;
-    final userNotifier = ref.read(userProvider.notifier);
+    final userNotifier = ref.read(userNotifierProvider.notifier);
 
     try {
       if (pageType == LoginPageType.signUp) {
-        await _handleSignUp(
-            userNotifier, email, username, password, repeatPassword);
+        await _handleSignUp(userNotifier, email, username, password);
       } else {
         await _handleLogin(userNotifier, email, password);
       }
     } catch (e) {
-      _logger.severe('Error during form submission: $e');
-      _showSnackbar('Error: ${e.toString()}', true);
+      _logger.severe('Submit error: $e');
+      _showError(e.toString());
     }
   }
 
   Future<void> _handleSignUp(
-    UserNotifier userNotifier,
+    UserNotifier notifier,
     String email,
     String username,
     String password,
-    String repeatPassword,
   ) async {
     if (username.isEmpty) {
-      _logger.warning('Sign-up failed: username is missing.');
-      _showSnackbar('Username is required', true);
+      _showError('Username required');
       return;
     }
-    if (password != repeatPassword) {
-      _logger.warning('Sign-up failed: passwords do not match.');
-      _showSnackbar('Passwords do not match', true);
+    if (password != repeatPasswordController.text) {
+      _showError('Passwords do not match');
       return;
     }
 
-    final credential = await userNotifier.signUp(email, username, password);
+    final credential = await notifier.signUp(email, username, password);
     if (credential == null) {
-      _logger.warning('Sign-up failed: user already exists.');
-      _showSnackbar('User already exists', true);
-    } else {
-      _logger.info('Sign-up successful for $email');
-      await userNotifier.addReferenceEmailUsername(email, username);
-      await userNotifier.addPlayer(email, username, credential);
-      _showSnackbar('Account created successfully!', false);
-      setState(() => pageType = LoginPageType.login);
+      _showError('User already exists');
+      return;
     }
+
+    await notifier.addReferenceEmailUsername(email, username);
+    await notifier.addPlayer(email, username, credential);
+    _showSuccess('Account created!');
+    setState(() => pageType = LoginPageType.login);
   }
 
   Future<void> _handleLogin(
-      UserNotifier userNotifier, String email, String password) async {
-    final credential = await userNotifier.login(email, password);
-    if (credential.isNotEmpty) {
-      final username = await userNotifier.findUsernameByEmail(email);
-      _logger.info('Login successful for $username');
-      _showSnackbar('Login successful!', false);
-      Navigator.of(context).pushReplacementNamed('/home');
-    }
+    UserNotifier notifier,
+    String email,
+    String password,
+  ) async {
+    await notifier.login(email, password);
+    _showSuccess('Login successful!');
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
-  void _showSnackbar(String message, bool isError) {
+  void _showError(String message) {
+    _showToast(message, Type.error);
+  }
+
+  void _showSuccess(String message) {
+    _showToast(message, Type.success);
+  }
+
+  void _showToast(String message, Type type) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Toast(message: message, type: isError ? Type.error : Type.success),
+        content: Toast(message: message, type: type),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -136,7 +129,7 @@ class _LoginState extends ConsumerState<Login> {
   @override
   Widget build(BuildContext context) {
     final isSignUp = pageType == LoginPageType.signUp;
-    final userState = ref.watch(userProvider);
+    final userState = ref.watch(userNotifierProvider);
 
     return Scaffold(
       backgroundColor: const Color.fromRGBO(21, 21, 21, 1),
@@ -144,7 +137,7 @@ class _LoginState extends ConsumerState<Login> {
         child: SingleChildScrollView(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
-            padding: const EdgeInsets.all(32.0),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               color: Theme.of(context).colorScheme.surface,
@@ -155,16 +148,26 @@ class _LoginState extends ConsumerState<Login> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTitle(),
+                  const Text(
+                    'Little Strategy',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
-                  ..._buildFormFields(isSignUp),
-                  _buildForgotPassword(isSignUp),
-                  _buildSubmitButton(userState),
-                  const SizedBox(height: 16),
-                  _buildErrorMessage(userState),
-                  const DividerWithText(),
-                  _buildSocialLoginButtons(),
-                  _buildTogglePageTypeButton(isSignUp),
+                  ...buildFields(isSignUp),
+                  if (!isSignUp) buildForgotPassword(),
+                  buildSubmitButton(userState),
+                  if (userState.error.isNotEmpty)
+                    Text(
+                      userState.error,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  DividerWithText(text: 'OR'),
+                  buildSocialLogin(),
+                  buildToggleButton(isSignUp),
                 ],
               ),
             ),
@@ -174,56 +177,41 @@ class _LoginState extends ConsumerState<Login> {
     );
   }
 
-  Widget _buildTitle() {
-    return const Text(
-      'Little Strategy',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
-  List<Widget> _buildFormFields(bool isSignUp) {
-    return [
-      _buildField(
-        label: 'Email',
-        controller: emailController,
-        hintText: 'Enter your email',
-        isPassword: false,
-      ),
-      if (isSignUp)
-        _buildField(
-          label: 'Username',
-          controller: usernameController,
-          hintText: 'Enter your username',
-          isPassword: false,
+  List<Widget> buildFields(bool isSignUp) => [
+        buildField(
+          label: 'Email',
+          controller: emailController,
+          hintText: 'Enter your email',
         ),
-      _buildField(
-        label: 'Password',
-        controller: passwordController,
-        hintText: 'Enter your password',
-        isPassword: true,
-      ),
-      if (isSignUp)
-        _buildField(
-          label: 'Repeat Password',
-          controller: repeatPasswordController,
-          hintText: 'Repeat your password',
+        if (isSignUp)
+          buildField(
+            label: 'Username',
+            controller: usernameController,
+            hintText: 'Enter your username',
+          ),
+        buildField(
+          label: 'Password',
+          controller: passwordController,
+          hintText: 'Enter your password',
           isPassword: true,
         ),
-    ];
-  }
+        if (isSignUp)
+          buildField(
+            label: 'Repeat Password',
+            controller: repeatPasswordController,
+            hintText: 'Repeat your password',
+            isPassword: true,
+          ),
+      ];
 
-  Widget _buildField({
+  Widget buildField({
     required String label,
     required TextEditingController controller,
     required String hintText,
-    required bool isPassword,
+    bool isPassword = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8),
       child: BuildField(
         label: label,
         controller: controller,
@@ -233,40 +221,34 @@ class _LoginState extends ConsumerState<Login> {
     );
   }
 
-  Widget _buildForgotPassword(bool isSignUp) {
-    if (isSignUp) return const SizedBox.shrink();
+  Widget buildForgotPassword() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: GestureDetector(
-        onTap: () {
-          _logger.info('Forgot password clicked.');
-          Navigator.of(context).pushNamed('/forgot-password');
-        },
+        onTap: () => Navigator.of(context).pushNamed('/forgot-password'),
         child: const Text(
           'Forgot your password?',
           style: TextStyle(
             decoration: TextDecoration.underline,
             fontSize: 14,
           ),
-          textAlign: TextAlign.start,
         ),
       ),
     );
   }
 
-  Widget _buildSubmitButton(UserState userState) {
+  Widget buildSubmitButton(UserState state) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8),
       child: ElevatedButton(
-        onPressed:
-            userState.status == UserStateStatus.loading ? null : _onSubmit,
+        onPressed: state.isLoading ? null : _onSubmit,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 26),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-        child: userState.status == UserStateStatus.loading
+        child: state.isLoading
             ? const SizedBox(
                 width: 24,
                 height: 24,
@@ -286,19 +268,8 @@ class _LoginState extends ConsumerState<Login> {
     );
   }
 
-  Widget _buildErrorMessage(UserState userState) {
-    if (userState.status != UserStateStatus.error) {
-      return const SizedBox.shrink();
-    }
-    return Text(
-      userState.errorMessage ?? 'An error occurred.',
-      style: const TextStyle(color: Colors.red),
-      textAlign: TextAlign.center,
-    );
-  }
-
-  Widget _buildSocialLoginButtons() {
-    final loginMethodsUrl = [
+  Widget buildSocialLogin() {
+    final loginMethods = [
       'packages/board_game/assets/svg/xbox.svg',
       'packages/board_game/assets/svg/playstation.svg',
       'packages/board_game/assets/svg/nintendo.svg',
@@ -310,54 +281,39 @@ class _LoginState extends ConsumerState<Login> {
     ];
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          _buildSocialLoginRow(loginMethodsUrl.sublist(0, 4)),
-          _buildSocialLoginRow(loginMethodsUrl.sublist(4)),
+          buildLoginRow(loginMethods.sublist(0, 4)),
+          buildLoginRow(loginMethods.sublist(4)),
         ],
       ),
     );
   }
 
-  Widget _buildSocialLoginRow(List<String> urls) {
+  Widget buildLoginRow(List<String> urls) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: urls
           .map((url) => LoginMethod(
                 url: url,
-                fn: () => _logger.info('Social login attempted: $url'),
+                fn: () => _logger.info('Social login: $url'),
               ))
           .toList(),
     );
   }
 
-  Widget _buildTogglePageTypeButton(bool isSignUp) {
+  Widget buildToggleButton(bool isSignUp) {
     return TextButton(
-      onPressed: _alternatePageType,
+      onPressed: _togglePageType,
       child: Text(
         isSignUp
             ? 'Already have an account? Sign in'
             : 'Don\'t have an account? Sign up',
-        style: GoogleFonts.lato(fontSize: 14, color: Colors.lightBlue),
-      ),
-    );
-  }
-}
-
-class DividerWithText extends StatelessWidget {
-  const DividerWithText({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(child: Divider()),
-          Text('    or sign in with    '),
-          Expanded(child: Divider()),
-        ],
+        style: GoogleFonts.lato(
+          fontSize: 14,
+          color: Colors.lightBlue,
+        ),
       ),
     );
   }

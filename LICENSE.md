@@ -1,2 +1,2 @@
 
-Copyright (C) 2024 Yann
+Copyright (C) 2024 Yann Bälli

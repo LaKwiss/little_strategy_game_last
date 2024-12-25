@@ -1,4 +1,5 @@
 import 'package:board_game/src/providers/lootbox/lootbox_provider.dart';
+import 'package:board_game/src/widgets/modern_text_field.dart';
 import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,18 +79,14 @@ class _CreateLootFormScreenState extends ConsumerState<CreateLootFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTextField(
+                  ModernTextField(
                       _typeController, 'Type', 'Veuillez entrer un type'),
-                  _buildTextField(
+                  ModernTextField(
                       _nameController, 'Nom', 'Veuillez entrer un nom'),
-                  _buildTextField(_referenceController, 'Référence',
+                  ModernTextField(_referenceController, 'Référence',
                       'Veuillez entrer une référence'),
-                  _buildTextField(
-                    _weightController,
-                    'Poids',
-                    'Veuillez entrer un poids',
-                    keyboardType: TextInputType.number,
-                  ),
+                  ModernTextField(
+                      _weightController, 'Poids', 'Veuillez entrer un poids'),
                   SizedBox(height: 20),
                   Center(
                     child: ElevatedButton(
@@ -110,41 +107,6 @@ class _CreateLootFormScreenState extends ConsumerState<CreateLootFormScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    TextEditingController controller,
-    String label,
-    String errorMessage, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.white70),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          filled: true,
-          fillColor: Colors.grey[800],
-        ),
-        style: TextStyle(color: Colors.white),
-        keyboardType: keyboardType,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return errorMessage;
-          }
-          if (keyboardType == TextInputType.number &&
-              double.tryParse(value) == null) {
-            return 'Veuillez entrer un nombre valide';
-          }
-          return null;
-        },
       ),
     );
   }

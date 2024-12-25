@@ -7,12 +7,12 @@ environment:
   sdk: 3.6.0
 
 dependencies:
-  analyzer: ^5.13.0
+  analyzer: ^6.5.0
   flutter:
     sdk: flutter
   board_game:
     path: packages/features/board_game
-  build_runner: ^2.4.13
+  build_runner: ^2.4.14
   user_remote_repository:
     path: packages/user_remote_repository
   firebase_core: ^3.8.0
@@ -38,7 +38,7 @@ dependencies:
   audioplayers: ^6.1.0
   lottie: ^3.3.0
   animated_text_kit: ^4.2.2
-  shimmer: ^3.0.0
+  shimmer: ^2.0.0
   
 
 dev_dependencies:

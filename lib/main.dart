@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:little_strategy/firebase_options.dart';
 import 'package:little_strategy/route.dart';
+import 'package:little_strategy/scroll_behavior.dart';
 import 'package:little_strategy/theme.dart';
 import 'package:logging/logging.dart';
 
@@ -36,6 +37,7 @@ class MainApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
+      scrollBehavior: scrollBehavior,
       debugShowCheckedModeBanner: false,
       theme: theme,
       title: 'Little Strategy Game',

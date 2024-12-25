@@ -1,62 +1,47 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+
 import 'package:board_game/board_game.dart';
-import 'package:board_game/src/providers/game/game_infos_stream_provider.dart';
-import 'package:board_game/src/widgets/infos.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LobbyScreen extends ConsumerStatefulWidget {
+// États pour gérer les différentes vues
+final lobbyStateProvider =
+    StateProvider<LobbyState>((ref) => LobbyState.gameSelection);
+
+enum LobbyState { gameSelection, gameList, createGame }
+
+class LobbyScreen extends ConsumerWidget {
   const LobbyScreen({super.key});
 
   @override
-  _LobbyScreenState createState() => _LobbyScreenState();
-}
-
-class _LobbyScreenState extends ConsumerState<LobbyScreen> {
-  @override
-  Widget build(BuildContext context) {
-    // Écoute de l'état d'authentification pour rediriger si l'utilisateur est déconnecté
-    ref.listen(authProvider, (previous, next) {
-      if (next.value == null &&
-          ModalRoute.of(context)?.settings.name != '/login') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacementNamed('/login');
-        });
-      }
-    });
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentState = ref.watch(lobbyStateProvider);
 
     return Scaffold(
-      bottomNavigationBar: customBottomNavigationBar(context),
-      body: _buildBody(context),
-      floatingActionButton: _buildFloatingActionButton(),
-    );
-  }
-
-  /// Builds the main body of the Lobby screen
-  Widget _buildBody(BuildContext context) {
-    final gameInfosAsync = ref.watch(gameInfosStreamProvider);
-
-    return Center(
-      child: gameInfosAsync.when(
-        data: (gameInfos) => ListView.builder(
-          itemCount: gameInfos.length,
-          itemBuilder: (context, index) {
-            final atomGameInfo = gameInfos[index];
-            return ExplodingAtomsInfoTile(gameInfo: atomGameInfo);
-          },
-        ),
-        loading: () => const CircularProgressIndicator(),
-        error: (e, _) => const Text('Error loading games'),
+      bottomNavigationBar: CustomBottomNavigationBar(),
+      backgroundColor: Color(0xFF2C1518),
+      floatingActionButton: currentState == LobbyState.gameList
+          ? FloatingActionButton(
+              onPressed: () => ref.read(lobbyStateProvider.notifier).state =
+                  LobbyState.createGame,
+              backgroundColor: Colors.purple,
+              child: Icon(Icons.add),
+            )
+          : null,
+      body: Row(
+        children: [
+          const Expanded(child: SizedBox.shrink()),
+          Expanded(
+            flex: 3,
+            child: switch (currentState) {
+              LobbyState.gameSelection => GameModeSelectionScreen(),
+              LobbyState.gameList => GameListScreen(),
+              LobbyState.createGame => ModernCreateGameView(),
+            },
+          ),
+          const Expanded(child: SizedBox.shrink()),
+        ],
       ),
-    );
-  }
-
-  /// Builds the floating action button for creating a new game
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.of(context).pushNamed('/create_game');
-      },
-      child: const Icon(Icons.add),
     );
   }
 }
