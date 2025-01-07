@@ -1,10 +1,6 @@
 // lib/src/screens/game_dashboard.dart
 import 'package:board_game/src/providers/article/article_provider.dart';
-import 'package:board_game/src/widgets/coming_soon_section.dart';
-import 'package:board_game/src/widgets/match_history.dart';
-import 'package:board_game/src/widgets/overview_card.dart';
 import 'package:board_game/src/widgets/widgets.dart';
-import 'package:board_game/src/widgets/side_navigation.dart';
 import 'package:board_game/src/widgets/tutorial_filters.dart'; // Import du widget TutorialFilters
 import 'package:domain_entities/domain_entities.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +24,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   late List<Article> articles;
 
+  int index = 0;
+
   @override
   Widget build(BuildContext context) {
     articles = ref.watch(articleNotifierProvider).articles;
@@ -37,19 +35,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: const Color(0xFF171717), // bg-neutral-900
       body: Row(
         children: [
-          SideNavigation(
-            currentSection: currentSection,
-            onSectionSelected: (section) {
-              setState(() {
-                currentSection = section;
-              });
-            },
-          ),
           Expanded(
-            child: Column(
+            child: Row(
               children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                        onPressed: () => setState(() {
+                              index = (index - 1) % screens().length;
+                            }),
+                        icon: Icon(Icons.arrow_back)),
+                  ],
+                ),
                 Expanded(
-                  child: _buildMainContent(),
+                  child: screens()[index],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                        onPressed: () => setState(() {
+                              index = (index + 1) % screens().length;
+                            }),
+                        icon: Icon(Icons.arrow_forward)),
+                  ],
                 ),
               ],
             ),
@@ -57,42 +69,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
-  }
-
-  // Route le contenu principal en fonction de la section actuelle
-  Widget _buildMainContent() {
-    switch (currentSection) {
-      case 'game':
-        return _buildGameSection();
-      case 'tutorials':
-        return _buildTutorialSection();
-      case 'achievements':
-        return ComingSoonSection(
-          title: 'Achievements Coming Soon',
-          description:
-              'Track your progress and earn special rewards as you master Exploding Atoms! The achievement system will feature unique challenges, progression milestones, and exclusive rewards. Complete missions, unlock badges, and showcase your accomplishments.',
-          releaseDate: 'January 2025',
-          icon: Icons.emoji_events,
-        );
-      case 'stats':
-        return ComingSoonSection(
-          title: 'Advanced Statistics',
-          description:
-              'Dive deep into your gameplay performance with detailed analytics! Track your improvement over time with advanced metrics, view heat maps of your successful moves, and analyze your playing patterns to become a better player.',
-          releaseDate: 'February 2025',
-          icon: Icons.bar_chart,
-        );
-      case 'settings':
-        return ComingSoonSection(
-          title: 'Settings & Customization',
-          description:
-              'Personalize your Exploding Atoms experience! Customize your game interface, adjust sound settings, modify controls, and choose from various themes to make the game truly yours. More customization options coming soon.',
-          releaseDate: 'March 2025',
-          icon: Icons.shield,
-        );
-      default:
-        return const SizedBox.shrink();
-    }
   }
 
   // Section "Game"
@@ -105,17 +81,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Expanded(
             child: Column(
               children: [
-                OverviewCard(),
-                const SizedBox(height: 32),
-                StatsSection(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Power up your experience: Our newest heroes have arrived!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.lightBlue,
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 4),
+                              const Text('View More'),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white,
+                              ),
+                            ],
+                          )),
+                    ],
+                  ),
+                ),
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment
+                        .center, // Centre les éléments horizontalement
+                    children: [
+                      HeroItem(
+                        'https://cdn.midjourney.com/38428919-d7cf-4e49-b37a-40474c1239e0/0_1.png',
+                      ),
+                      HeroItem(
+                        'https://cdn.midjourney.com/e3b2ff03-7724-4e55-ae35-1bc6926e4c11/0_0.png',
+                      ),
+                      HeroItem(
+                        'https://cdn.midjourney.com/68594668-7262-45ac-9bd8-9aded91f806c/0_3.png',
+                      ),
+                      HeroItem(
+                        'https://cdn.midjourney.com/804c9df1-78f9-4475-b3d2-e56432e22f3e/0_3.png',
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            ),
-          ),
-          const SizedBox(width: 32),
-          SizedBox(
-            width: 384,
-            child: MatchHistory(
-              matches: [],
             ),
           ),
         ],
@@ -204,5 +224,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           article.description.toLowerCase().contains(searchQuery.toLowerCase());
       return matchesCategory && matchesDifficulty && matchesSearch;
     }).toList();
+  }
+
+  List<Widget> screens() {
+    return [
+      _buildGameSection(),
+      _buildTutorialSection(),
+    ];
+  }
+}
+
+class HeroItem extends StatelessWidget {
+  const HeroItem(
+    this.imageURL, {
+    super.key,
+  });
+
+  final String imageURL;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          width: 324,
+          height: 586,
+          child: Image.network(
+            imageURL,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+              onPressed: () {}, child: const Icon(Icons.upcoming)),
+        ),
+      ],
+    );
   }
 }

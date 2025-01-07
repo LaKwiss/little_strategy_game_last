@@ -14,7 +14,7 @@ class OpenLootboxScreen extends ConsumerStatefulWidget {
 class _OpenLootboxScreenState extends ConsumerState<OpenLootboxScreen>
     with TickerProviderStateMixin {
   static const String _lootboxImage =
-      'https://cdn.discordapp.com/attachments/1194348634708377631/1320484247840096328/u3919386633_A_vibrant_cartoon-style_treasure_chest_with_shimm_9978d7e1-9e93-4e69-8c5c-d734ddda781c_2.png?ex=6769c44a&is=676872ca&hm=02e061354c063f46a2fe3de195327344817d169d122a02ded7622d350a35d352&';
+      'https://cdn.midjourney.com/26f913ca-2e33-4d60-97af-56f5622092a7/0_1.png';
 
   late AnimationController _chestController;
   late AnimationController _buttonController;

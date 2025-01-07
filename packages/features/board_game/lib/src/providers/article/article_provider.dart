@@ -7,8 +7,7 @@ part 'article_provider.g.dart';
 @riverpod
 class ArticleNotifier extends _$ArticleNotifier {
   @override
-  ArticleState build() =>
-      ArticleState(articles: ArticleState.initial().articles);
+  ArticleState build() => ArticleState(articles: []);
 
   void updateCategory(String category) {
     state = state.copyWith(selectedCategory: category);

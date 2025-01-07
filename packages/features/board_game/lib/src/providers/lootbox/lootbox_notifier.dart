@@ -1,10 +1,9 @@
+import 'package:board_game/src/providers/lootbox/lootbox_provider_state.dart';
 import 'package:domain_entities/domain_entities.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:lootbox_repository/lootbox_repository.dart';
-
-part 'lootbox_provider_state.dart';
 
 class LootboxProviderNotifier extends StateNotifier<LootboxProviderState> {
   final LootboxRepository _repository;
@@ -49,7 +48,7 @@ class LootboxProviderNotifier extends StateNotifier<LootboxProviderState> {
   /// Récupère les loots d'un utilisateur spécifique via `getLootFromUser`
   Future<List<Loot>> getLootFromUser(String username) async {
     return _safeExecute(() async {
-      final loots = await _repository.getLootFromUser(username);
+      final loots = await _repository.getUserLoot(username);
       state = state.copyWith(lootList: loots);
       return loots;
     });
@@ -63,7 +62,7 @@ class LootboxProviderNotifier extends StateNotifier<LootboxProviderState> {
     }
 
     return _safeExecute(() async {
-      final lootList = await _repository.getLootFromUser(user.displayName!);
+      final lootList = await _repository.getUserLoot(user.displayName!);
       state = state.copyWith(lootList: lootList);
     });
   }

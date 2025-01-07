@@ -5,34 +5,26 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final destinations = [
-      (icon: Icons.home, route: '/home'),
-      (icon: Icons.list, route: '/lobby'),
-      (icon: Icons.person, route: '/profile'),
-    ];
-
-    return NavigationBarTheme(
-      data: NavigationBarThemeData(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          height: 68,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-          indicatorColor: Colors.transparent),
-      child: NavigationBar(
-        selectedIndex: _getCurrentIndex(context),
-        onDestinationSelected: (index) =>
-            Navigator.pushNamed(context, destinations[index].route),
-        destinations: destinations
-            .map((d) => NavigationDestination(
-                  icon: Icon(d.icon),
-                  label: '',
-                ))
-            .toList(),
+    return Container(
+      color: Colors.black26,
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).pushNamed('/home'),
+            icon: Icon(Icons.home),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pushNamed('/lobby'),
+            icon: Icon(Icons.list),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pushNamed('/profile'),
+            icon: Icon(Icons.person),
+          ),
+        ],
       ),
     );
-  }
-
-  int _getCurrentIndex(BuildContext context) {
-    final route = ModalRoute.of(context)?.settings.name ?? '';
-    return ['/home', '/lobby', '/profile'].indexOf(route);
   }
 }

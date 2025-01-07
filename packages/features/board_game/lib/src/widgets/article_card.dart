@@ -48,7 +48,7 @@ class ArticleCard extends StatelessWidget {
             SizedBox(
               // Hauteur fixe pour le footer
               height: 24,
-              child: _buildFooter(),
+              child: _buildFooter(context),
             ),
           ],
         ),
@@ -95,27 +95,53 @@ class ArticleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween, // Meilleur alignement
       children: [
         _buildTag(article.category),
-        Row(
-          children: [
-            Icon(
-              Icons.access_time,
-              size: _smallIconSize,
-              color: Colors.grey[400],
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text(article.title),
+                    content: SingleChildScrollView(
+                      child: Text(article.description),
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text('Fermer'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: _smallIconSize,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  article.readTime,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: _tagFontSize,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            Text(
-              article.readTime,
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: _tagFontSize,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -125,7 +151,7 @@ class ArticleCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.purple.withOpacity(0.2), // Plus propre que withAlpha
+        color: Colors.purple.withAlpha((0.2 * 255).round()),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

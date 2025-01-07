@@ -144,7 +144,7 @@ class GameRemoteRepository implements GameRepository {
       final querySnapshot = await _firestore.collection('gameInfos').get();
       final gameInfosList = querySnapshot.docs.map((doc) {
         final data = doc.data();
-        return ExplodingAtomsInfos.fromJson(data..['id'] = doc.id);
+        return ExplodingAtomsInfos.fromJson(data, id: doc.id);
       }).toList();
       _logger.fine('Fetched ${gameInfosList.length} game infos.');
       return gameInfosList;
@@ -204,7 +204,7 @@ class GameRemoteRepository implements GameRepository {
         _logger.severe('Data is null for game infos with id: $gameId');
         throw Exception('Game infos data is null');
       }
-      return ExplodingAtomsInfos.fromJson(data..['id'] = doc.id);
+      return ExplodingAtomsInfos.fromJson(data, id: doc.id);
     } catch (e, stack) {
       _logger.severe('Error in getGameInfos: $e', e, stack);
       rethrow;

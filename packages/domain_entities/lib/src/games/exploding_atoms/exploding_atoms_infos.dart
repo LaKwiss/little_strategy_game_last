@@ -1,5 +1,3 @@
-import 'package:domain_entities/domain_entities.dart';
-
 /// Represents the informations of the game.
 class ExplodingAtomsInfos {
   final String id;
@@ -9,8 +7,9 @@ class ExplodingAtomsInfos {
   final int totalPlayers;
   final int turn;
   final int totalAtoms;
-  final ExplodingAtomsState state;
+  final String state;
   final String title;
+  final DateTime createdAt;
 
   ExplodingAtomsInfos({
     required this.id,
@@ -22,25 +21,24 @@ class ExplodingAtomsInfos {
     required this.totalAtoms,
     required this.state,
     required this.title,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
-  factory ExplodingAtomsInfos.fromJson(Map<String, dynamic> json,
-      {String? id}) {
-    int stateIndex = json['state'] ?? 0;
-    if (stateIndex < 0 || stateIndex >= ExplodingAtomsState.values.length) {
-      stateIndex = 0;
-    }
-
+  factory ExplodingAtomsInfos.fromJson(
+    Map<String, dynamic> json, {
+    required String id,
+  }) {
     return ExplodingAtomsInfos(
-      id: id ?? json['id'] as String,
-      gridRows: json['gridRows'] as int,
-      gridCols: json['gridCols'] as int,
-      currentPlayer: json['currentPlayer'] as int,
-      totalPlayers: json['totalPlayers'] as int,
-      turn: json['turn'] as int,
-      totalAtoms: json['totalAtoms'] as int,
-      state: ExplodingAtomsState.values[stateIndex],
-      title: json['title'] as String,
+      id: json['id'] ?? id,
+      gridRows: json['gridRows'],
+      gridCols: json['gridCols'],
+      currentPlayer: json['currentPlayer'],
+      totalPlayers: json['totalPlayers'],
+      turn: json['turn'],
+      totalAtoms: json['totalAtoms'],
+      state: json['state'],
+      title: json['title'],
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 
@@ -53,8 +51,35 @@ class ExplodingAtomsInfos {
       'totalPlayers': totalPlayers,
       'turn': turn,
       'totalAtoms': totalAtoms,
-      'state': state.index,
+      'state': state,
       'title': title,
+      'createdAt': createdAt.toIso8601String(),
     };
+  }
+
+  ExplodingAtomsInfos copyWith({
+    String? id,
+    int? gridRows,
+    int? gridCols,
+    int? currentPlayer,
+    int? totalPlayers,
+    int? turn,
+    int? totalAtoms,
+    String? state,
+    String? title,
+    DateTime? createdAt,
+  }) {
+    return ExplodingAtomsInfos(
+      id: id ?? this.id,
+      gridRows: gridRows ?? this.gridRows,
+      gridCols: gridCols ?? this.gridCols,
+      currentPlayer: currentPlayer ?? this.currentPlayer,
+      totalPlayers: totalPlayers ?? this.totalPlayers,
+      turn: turn ?? this.turn,
+      totalAtoms: totalAtoms ?? this.totalAtoms,
+      state: state ?? this.state,
+      title: title ?? this.title,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }

@@ -3,17 +3,11 @@ import 'package:domain_entities/domain_entities.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 
-enum ExplodingAtomsState {
-  waitingForPlayers,
-  started,
-  ended,
-}
-
 class ExplodingAtoms extends FlameGame with TapCallbacks {
   late String id;
 
   int turn = 0;
-  ExplodingAtomsState state = ExplodingAtomsState.waitingForPlayers;
+  String state = 'waitingForPlayers';
   String title = "Exploding Atoms";
 
   // Au lieu de laisser grid en late sans initialisation,
@@ -44,7 +38,7 @@ class ExplodingAtoms extends FlameGame with TapCallbacks {
     turn = 0;
     totalAtoms = 0;
     currentPlayer = 1;
-    state = ExplodingAtomsState.waitingForPlayers;
+    state = 'waitingForPlayers';
   }
 
   @override
@@ -68,7 +62,7 @@ class ExplodingAtoms extends FlameGame with TapCallbacks {
     }
 
     if (totalPlayers > 1) {
-      state = ExplodingAtomsState.started;
+      state = 'playing';
     }
   }
 
@@ -99,7 +93,7 @@ class ExplodingAtoms extends FlameGame with TapCallbacks {
     if (owners.length == 1 && turn > 1) {
       final winner = owners.first;
       log("Le joueur $winner a gagné !");
-      state = ExplodingAtomsState.ended;
+      state = 'gameOver';
       // resetGrid(); // Optionnel
     }
   }
@@ -161,11 +155,7 @@ class ExplodingAtoms extends FlameGame with TapCallbacks {
     turn = json['turn'] ?? 0;
     totalAtoms = json['totalAtoms'] ?? 0;
 
-    int stateIndex = json['state'] ?? 0;
-    if (stateIndex < 0 || stateIndex >= ExplodingAtomsState.values.length) {
-      stateIndex = 0;
-    }
-    state = ExplodingAtomsState.values[stateIndex];
+    state = json['state'] ?? 'waitingForPlayers';
 
     title = json['title'] ?? "Exploding Atoms";
 
@@ -201,7 +191,7 @@ class ExplodingAtoms extends FlameGame with TapCallbacks {
       'totalPlayers': totalPlayers,
       'turn': turn,
       'totalAtoms': totalAtoms,
-      'state': state.index,
+      'state': state,
       'title': title,
       'grid':
           grid.map((row) => row.map((cell) => cell.toJson()).toList()).toList(),

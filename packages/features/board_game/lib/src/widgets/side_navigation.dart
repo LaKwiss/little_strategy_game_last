@@ -6,10 +6,10 @@ class SideNavigation extends StatelessWidget {
   final ValueChanged<String> onSectionSelected;
 
   const SideNavigation({
-    Key? key,
+    super.key,
     required this.currentSection,
     required this.onSectionSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,40 +1,21 @@
-part of 'lootbox_notifier.dart';
+import 'package:domain_entities/domain_entities.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'lootbox_provider_state.freezed.dart';
 
 enum LootboxProviderStatus { initial, loading, success, error }
 
-class LootboxProviderState {
-  final LootboxProviderStatus status;
-  final List<Loot> lootList;
-  final String? error;
-
-  LootboxProviderState({
-    required this.status,
-    required this.lootList,
-    this.error,
-  });
-
-  factory LootboxProviderState.initial() {
-    return LootboxProviderState(
-      status: LootboxProviderStatus.initial,
-      lootList: [],
-      error: null,
-    );
-  }
-
-  LootboxProviderState copyWith({
-    LootboxProviderStatus? status,
-    List<Loot>? lootList,
+@freezed
+class LootboxProviderState with _$LootboxProviderState {
+  const factory LootboxProviderState({
+    required LootboxProviderStatus status,
+    required List<Loot> lootList,
     String? error,
-  }) {
-    return LootboxProviderState(
-      status: status ?? this.status,
-      lootList: lootList ?? this.lootList,
-      error: error ?? this.error,
-    );
-  }
+  }) = _LootboxProviderState;
 
-  @override
-  String toString() {
-    return 'LootboxProviderState(status: $status, lootList: ${lootList.length}, error: $error)';
-  }
+  factory LootboxProviderState.initial() => const LootboxProviderState(
+        status: LootboxProviderStatus.initial,
+        lootList: [],
+        error: null,
+      );
 }

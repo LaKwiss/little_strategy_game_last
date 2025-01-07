@@ -49,7 +49,7 @@ class _ExplodingAtomsInfoTileState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text('État: ${_stateToString(widget.gameInfo.state)}'),
+            Text('État: ${widget.gameInfo.state}'),
             const SizedBox(height: 2),
             Text('Tour: ${widget.gameInfo.turn}'),
             const SizedBox(height: 2),
@@ -81,32 +81,24 @@ class _ExplodingAtomsInfoTileState
     Color iconColor;
 
     switch (widget.gameInfo.state) {
-      case ExplodingAtomsState.waitingForPlayers:
+      case 'waitingForPlayers':
         iconData = Icons.hourglass_bottom;
         iconColor = Colors.orange;
         break;
-      case ExplodingAtomsState.started:
+      case 'started':
         iconData = Icons.play_arrow;
         iconColor = Colors.green;
         break;
-      case ExplodingAtomsState.ended:
+      case 'ended':
         iconData = Icons.check_circle;
         iconColor = Colors.red;
+        break;
+      default:
+        iconData = Icons.error;
+        iconColor = Colors.grey;
         break;
     }
 
     return Icon(iconData, color: iconColor, size: 28);
-  }
-
-  /// Convertit l'état enum [ExplodingAtomsState] en une chaîne lisible.
-  String _stateToString(ExplodingAtomsState state) {
-    switch (state) {
-      case ExplodingAtomsState.waitingForPlayers:
-        return 'En attente de joueurs';
-      case ExplodingAtomsState.started:
-        return 'En cours';
-      case ExplodingAtomsState.ended:
-        return 'Terminé';
-    }
   }
 }
